@@ -1,0 +1,71 @@
+module atlaas {
+    codels_requires:    libimages3d, t3d, atlaas;
+    requires:           pom, genBasic, genPos, "velodyne >= 1.2";
+    internal_data:      atlaas_t;
+    version:            "0.1337";
+};
+
+import from pom {
+#include "pomStruct.h"
+};
+
+import from genBasic {
+#include "genBasicStruct.h"
+};
+
+import from genPos {
+#include "genPosStruct.h"
+};
+
+import from velodyne {
+#include "velodyneClient.h"
+};
+
+#include "atlaas_struct.h"
+
+
+/* Initializes the internal ATLAAS */
+request Init {
+    doc:            "Initialize";
+    type:           init;
+    input:          meta::meta;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_init_exec;
+    fail_msg:
+        BAD_INIT_PARAMS,
+        INTERNAL_ATLAAS_CREATION_FAILED,
+        INTERNAL_ATLAAS_INIT_FAILED;
+    incompatible_with:  all;
+};
+
+/* Connects to a 3D data module */
+request Connect {
+    doc:            "Connects to a 3D data module";
+    type:           exec;
+    input:          conn::conn;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_connect_exec;
+    fail_msg:
+        POSTER_NOT_FOUND,
+        POSTERS_NOT_COMPATIBLE;
+    incompatible_with:  all;
+};
+
+/* Fuses an Im3d in the atlaas. TODO : faire pls fct (start, exec, end) */
+request Fuse {
+    doc:            "Fuses an Im3d in the atlaas";
+    type:           exec;
+    posters_input:  velodyne3DImage;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_fuse_exec;
+    fail_msg:       NOT_CONNECTED;
+    incompatible_with:  all;
+};
+
+exec_task ExecTask {
+    priority:       200;
+    stack_size:     20000; /* TODO */
+    c_init_func:    atlaas_exec_task_init;
+    c_end_func:     atlaas_exec_task_end;
+    fail_msg:       ATLAAS_TASK_ERROR;
+};

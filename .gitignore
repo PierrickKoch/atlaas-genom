@@ -1,0 +1,16 @@
+#ignore generated files
+.genom/
+Makefile.in
+acinclude.user.m4
+autoconf/
+autogen
+configure
+configure.ac.user
+local.mk.in
+server/
+
+#ignore build folder
+build/
+
+# but count this one
+!codels/Makefile.in
