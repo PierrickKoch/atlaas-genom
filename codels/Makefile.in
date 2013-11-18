@@ -18,8 +18,8 @@ all: codels-mk-all
 # --- source files ------------------------------------------------------
 
 codels_src = \
-	atlaasExecTaskCodels.c \
-	atlaasCntrlTaskCodels.c
+	atlaasExecTaskCodels.cc \
+	atlaasCntrlTaskCodels.cc
 
 # Add extra flags for the preprocessor (external libraries, ...)
 EXTRA_INCLUDES += -std=c++0x

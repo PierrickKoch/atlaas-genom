@@ -1,5 +1,5 @@
 /**
- ** atlaasExecTaskCodels.c
+ ** atlaasExecTaskCodels.cc
  **
  ** Codels called by execution task atlaasExecTask
  **
@@ -14,7 +14,16 @@
 
 #include <atlaas/atlaas.hpp>
 
-atlaas dtm;
+static atlaas dtm;
+
+static POSTER_ID velodyne_poster_id;
+static velodyne3DImage* velodyne_ptr;
+
+static POSTER_ID pom_poster_id;
+/* point-cloud origin in the globale frame
+ * needed to merge velodyne data.
+ */
+T3D main_to_origin;
 
 /*------------------------------------------------------------------------
  *
@@ -64,7 +73,7 @@ ACTIVITY_EVENT
 atlaas_init_exec(geodata *meta, int *report)
 {
   /* try..catch ? */
-  dtm.init(meta->width, meta->height,
+  atlaas::dtm.init(meta->width, meta->height,
            meta->transform[1], /* scale (W-E) */
            meta->custom[0], meta->custom[1],
            meta->transform[0], meta->transform[3],
@@ -87,7 +96,28 @@ atlaas_init_exec(geodata *meta, int *report)
 ACTIVITY_EVENT
 atlaas_connect_exec(connect *conn, int *report)
 {
-  /* ... add your code here ... */
+
+  /* Look up for Pom poster */
+  if (posterFind(conn->pom_poster, &pom_poster_id) == ERROR) {
+    fprintf(stderr, "atlaas: cannot find pom poster\n");
+    *report = S_atlaas_POSTER_NOT_FOUND;
+    return ETHER;
+  }
+
+  /* Look up for Velodyne poster */
+  if (posterFind(conn->velodyne_poster, &velodyne_poster_id) == ERROR) {
+    fprintf(stderr, "atlaas: cannot find velodyne poster\n");
+    *report = S_atlaas_POSTER_NOT_FOUND;
+    return ETHER;
+  }
+
+  /* Get Velodyne data address */
+  velodyne_ptr = posterAddr(velodyne_poster_id);
+  if (velodyne_ptr == NULL) {
+    *report = S_atlaas_POSTER_NOT_FOUND;
+    return ETHER;
+  }
+
   return ETHER;
 }
 
