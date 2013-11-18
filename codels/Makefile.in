@@ -22,8 +22,8 @@ codels_src = \
 	atlaasCntrlTaskCodels.c
 
 # Add extra flags for the preprocessor (external libraries, ...)
-# EXTRA_INCLUDES +=
-#
+EXTRA_INCLUDES += -std=c++0x
+
 # Add extra link flags (external libraries, ...)
 # EXTRA_LIBS +=
 #

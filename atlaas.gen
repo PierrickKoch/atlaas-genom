@@ -1,8 +1,10 @@
 module atlaas {
     codels_requires:    libimages3d, t3d, atlaas;
     requires:           pom, genBasic, genPos, "velodyne >= 1.2";
-    internal_data:      atlaas_t;
-    version:            "0.1337";
+    internal_data:      atlaas_t;   /* C typedef (defined below) */
+    lang:               "c++";      /* atlaas is C++11 */
+    number:             1337;       /* module id: unique number */
+    version:            "0.1";
 };
 
 import from pom {
@@ -22,6 +24,14 @@ import from velodyne {
 };
 
 #include "atlaas_struct.h"
+
+typedef struct atlaas_t {
+    /** params */
+    geodata meta;
+    connect conn;
+    /** actual data */
+    raster band;
+} atlaas_t;
 
 
 /* Initializes the internal ATLAAS */

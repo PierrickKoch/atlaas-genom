@@ -12,6 +12,9 @@
 
 #include "server/atlaasHeader.h"
 
+#include <atlaas/atlaas.hpp>
+
+atlaas dtm;
 
 /*------------------------------------------------------------------------
  *
@@ -60,7 +63,12 @@ atlaas_exec_task_end(void)
 ACTIVITY_EVENT
 atlaas_init_exec(geodata *meta, int *report)
 {
-  /* ... add your code here ... */
+  /* try..catch ? */
+  dtm.init(meta->width, meta->height,
+           meta->transform[1], /* scale (W-E) */
+           meta->custom[0], meta->custom[1],
+           meta->transform[0], meta->transform[3],
+           meta->utm[0], meta->utm[1] );
   return ETHER;
 }
 

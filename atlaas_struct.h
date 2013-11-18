@@ -11,13 +11,13 @@
  * https://github.com/pierriko/gdalwrap
  */
 
-typedef struct {
+typedef struct raster {
     unsigned long size;
     float data[512*512*3];
 } raster;
 
 
-typedef struct {
+typedef struct geodata {
     /** width in pixel */
     unsigned long width;
 
@@ -47,19 +47,11 @@ typedef struct {
     int utm[2];
 } geodata;
 
-typedef struct {
+typedef struct connect {
     int pom;
     char pom_poster[POSTER_MAX_LEN];
     int velodyne;
     char velodyne_poster[POSTER_MAX_LEN];
 } connect;
-
-typedef struct {
-    /** params */
-    geodata meta;
-    connect conn;
-    /** actual data */
-    raster band;
-} atlaas_t;
 
 #endif /* ATLAASSTRUCT_H */
