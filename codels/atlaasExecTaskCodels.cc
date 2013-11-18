@@ -12,9 +12,10 @@
 
 #include "server/atlaasHeader.h"
 
+#include <t3d/t3d.h>
 #include <atlaas/atlaas.hpp>
 
-static atlaas dtm;
+static atlaas::atlaas dtm;
 
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
@@ -73,7 +74,7 @@ ACTIVITY_EVENT
 atlaas_init_exec(geodata *meta, int *report)
 {
   /* try..catch ? */
-  atlaas::dtm.init(meta->width, meta->height,
+  dtm.init(meta->width, meta->height,
            meta->transform[1], /* scale (W-E) */
            meta->custom[0], meta->custom[1],
            meta->transform[0], meta->transform[3],
@@ -112,7 +113,7 @@ atlaas_connect_exec(connect *conn, int *report)
   }
 
   /* Get Velodyne data address */
-  velodyne_ptr = posterAddr(velodyne_poster_id);
+  velodyne_ptr = (velodyne3DImage*) posterAddr(velodyne_poster_id);
   if (velodyne_ptr == NULL) {
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
@@ -135,7 +136,7 @@ atlaas_connect_exec(connect *conn, int *report)
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  /* ... add your code here ... */
+  /* TODO dtm.merge(cloud, to_origin) */
   return ETHER;
 }
 

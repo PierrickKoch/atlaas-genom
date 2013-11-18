@@ -48,7 +48,6 @@ request Init {
     incompatible_with:  all;
 };
 
-/* Connects to a 3D data module */
 request Connect {
     doc:            "Connects to a 3D data module";
     type:           exec;
@@ -61,9 +60,8 @@ request Connect {
     incompatible_with:  all;
 };
 
-/* Fuses an Im3d in the atlaas. TODO : faire pls fct (start, exec, end) */
 request Fuse {
-    doc:            "Fuses an Im3d in the atlaas";
+    doc:            "Fuses a point-cloud in the atlaas";
     type:           exec;
     posters_input:  velodyne3DImage;
     exec_task:      ExecTask;
