@@ -1,14 +1,10 @@
 module atlaas {
     codels_requires:    libimages3d, t3d, atlaas;
-    requires:           pom, genBasic, genPos, "velodyne >= 1.2";
+    requires:           genBasic, genPos, "velodyne >= 1.2";
     internal_data:      atlaas_t;   /* C typedef (defined below) */
     lang:               "c++";      /* atlaas is C++11 */
     number:             1337;       /* module id: unique number */
     version:            "0.1";
-};
-
-import from pom {
-#include "pomStruct.h"
 };
 
 import from genBasic {
@@ -33,10 +29,9 @@ typedef struct atlaas_t {
     raster band;
 } atlaas_t;
 
-
 /* Initializes the internal ATLAAS */
 request Init {
-    doc:            "Initialize";
+    doc:            "Initialize and connect to Velodyne";
     type:           init;
     input:          meta::meta;
     exec_task:      ExecTask;
@@ -44,17 +39,7 @@ request Init {
     fail_msg:
         BAD_INIT_PARAMS,
         INTERNAL_ATLAAS_CREATION_FAILED,
-        INTERNAL_ATLAAS_INIT_FAILED;
-    incompatible_with:  all;
-};
-
-request Connect {
-    doc:            "Connects to a 3D data module";
-    type:           exec;
-    input:          conn::conn;
-    exec_task:      ExecTask;
-    c_exec_func:    atlaas_connect_exec;
-    fail_msg:
+        INTERNAL_ATLAAS_INIT_FAILED,
         POSTER_NOT_FOUND,
         POSTERS_NOT_COMPATIBLE;
     incompatible_with:  all;

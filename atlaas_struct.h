@@ -45,13 +45,9 @@ typedef struct geodata {
      * [1] : is north ? (boolean)
      */
     int utm[2];
-} geodata;
 
-typedef struct connect {
-    int pom;
-    char pom_poster[POSTER_MAX_LEN];
-    int velodyne;
+    /** Velodyne poster name */
     char velodyne_poster[POSTER_MAX_LEN];
-} connect;
+} geodata;
 
 #endif /* ATLAASSTRUCT_H */

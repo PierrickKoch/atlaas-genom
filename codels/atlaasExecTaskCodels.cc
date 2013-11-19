@@ -20,12 +20,6 @@ static atlaas::atlaas dtm;
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
 
-static POSTER_ID pom_poster_id;
-/* point-cloud origin in the globale frame
- * needed to merge velodyne data.
- */
-T3D main_to_origin;
-
 /*------------------------------------------------------------------------
  *
  * atlaas_exec_task_init  --  Initialization codel (fIDS, ...)
@@ -66,6 +60,8 @@ atlaas_exec_task_end(void)
  *              S_atlaas_BAD_INIT_PARAMS
  *              S_atlaas_INTERNAL_ATLAAS_CREATION_FAILED
  *              S_atlaas_INTERNAL_ATLAAS_INIT_FAILED
+ *              S_atlaas_POSTER_NOT_FOUND
+ *              S_atlaas_POSTERS_NOT_COMPATIBLE
  */
 
 /* atlaas_init_exec  -  codel EXEC of Init
@@ -79,34 +75,9 @@ atlaas_init_exec(geodata *meta, int *report)
            meta->custom[0], meta->custom[1],
            meta->transform[0], meta->transform[3],
            meta->utm[0], meta->utm[1] );
-  return ETHER;
-}
-
-/*------------------------------------------------------------------------
- * Connect
- *
- * Description: 
- *
- * Reports:      OK
- *              S_atlaas_POSTER_NOT_FOUND
- *              S_atlaas_POSTERS_NOT_COMPATIBLE
- */
-
-/* atlaas_connect_exec  -  codel EXEC of Connect
-   Returns:  EXEC END ETHER FAIL ZOMBIE */
-ACTIVITY_EVENT
-atlaas_connect_exec(connect *conn, int *report)
-{
-
-  /* Look up for Pom poster */
-  if (posterFind(conn->pom_poster, &pom_poster_id) == ERROR) {
-    fprintf(stderr, "atlaas: cannot find pom poster\n");
-    *report = S_atlaas_POSTER_NOT_FOUND;
-    return ETHER;
-  }
 
   /* Look up for Velodyne poster */
-  if (posterFind(conn->velodyne_poster, &velodyne_poster_id) == ERROR) {
+  if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
     fprintf(stderr, "atlaas: cannot find velodyne poster\n");
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
@@ -136,7 +107,20 @@ atlaas_connect_exec(connect *conn, int *report)
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  /* TODO dtm.merge(cloud, to_origin) */
+  /* Get the velodyne poster, fills the internal DATA_IM3D and TR3D with it  */
+  if (atlaasvelodyne3DImagePosterRead (velodyne_poster_id, velodyne_ptr) != OK) {
+    fprintf (stderr, "atlaas: can not read Velodyne poster\n");
+    *report = S_dtm_POSTER_NOT_FOUND;
+    return ETHER;
+  }
+  /* TODO dtm.merge(cloud, to_origin)
+  velodyne_ptr->position.sensorToMain.euler
+  velodyne_ptr->position.mainToOrigin.euler
+  velodyne_ptr->points
+
+  see: velodyne-genom/velodyneClient.h
+  */
+
   return ETHER;
 }
 
