@@ -36,11 +36,7 @@ request Init {
     exec_task:      ExecTask;
     c_exec_func:    atlaas_init_exec;
     fail_msg:
-        BAD_INIT_PARAMS,
-        INTERNAL_ATLAAS_CREATION_FAILED,
-        INTERNAL_ATLAAS_INIT_FAILED,
-        POSTER_NOT_FOUND,
-        POSTERS_NOT_COMPATIBLE;
+        POSTER_NOT_FOUND;
     incompatible_with:  all;
 };
 
@@ -52,6 +48,16 @@ request Fuse {
     c_exec_func:    atlaas_fuse_exec;
     fail_msg:
         POSTER_NOT_FOUND;
+    incompatible_with:  all;
+};
+
+request Save {
+    doc:            "Save the ATLAAS as GeoTiff";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_save_exec;
+    fail_msg:
+        WRITE_ERROR;
     incompatible_with:  all;
 };
 

@@ -8,6 +8,9 @@
 #define DTM_MAX_LINES   200
 #define DTM_MAX_COLUMNS 200
 
+#define ATLAAS_FILENAME "/tmp/atlaas.tif"
+
+
 /** atlaas struct
  *
  * This file aims at defining a generic structur for GeoData.

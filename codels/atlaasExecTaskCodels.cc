@@ -8,6 +8,7 @@
  **
  **/
 
+#include <iostream>
 #include <portLib.h>
 
 #include "server/atlaasHeader.h"
@@ -59,11 +60,7 @@ atlaas_exec_task_end(void)
  * Description: 
  *
  * Reports:      OK
- *              S_atlaas_BAD_INIT_PARAMS
- *              S_atlaas_INTERNAL_ATLAAS_CREATION_FAILED
- *              S_atlaas_INTERNAL_ATLAAS_INIT_FAILED
  *              S_atlaas_POSTER_NOT_FOUND
- *              S_atlaas_POSTERS_NOT_COMPATIBLE
  */
 
 /* atlaas_init_exec  -  codel EXEC of Init
@@ -80,7 +77,7 @@ atlaas_init_exec(geodata *meta, int *report)
 
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
-    fprintf(stderr, "atlaas: cannot find velodyne poster\n");
+    std::cerr << "atlaas: cannot find velodyne poster\n";
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
   }
@@ -168,3 +165,27 @@ atlaas_fuse_exec(int *report)
 
   return ETHER;
 }
+
+/*------------------------------------------------------------------------
+ * Save
+ *
+ * Description:
+ *
+ * Reports:      OK
+ *              S_atlaas_WRITE_ERROR
+ */
+
+/* atlaas_save_exec  -  codel EXEC of Save
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_save_exec(int *report)
+{
+  try {
+    dtm.get().save(ATLAAS_FILENAME);
+  } catch ( std::exception& e ) {
+    std::cerr << "atlaas::save failed, with message '" << e.what() << "'\n";
+    *report = S_atlaas_WRITE_ERROR;
+  }
+  return ETHER;
+}
+
