@@ -95,19 +95,46 @@ atlaas_init_exec(geodata *meta, int *report)
 
 
 atlaas::point6d to_origin(/* velodyne3DImage* velodyne_ptr */) {
+  T3D t3d_sensor_to_origin;
+  T3D t3d_sensor_to_main;
+  T3D t3d_main_to_origin;
   atlaas::point6d sensor_to_origin;
-  /* TODO
-  velodyne_ptr->position.sensorToMain.euler
-  velodyne_ptr->position.mainToOrigin.euler */
+
+  t3dInit(&t3d_sensor_to_origin, T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&t3d_sensor_to_main,   T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&t3d_main_to_origin,   T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  /* Now get the relevant T3D from the PomSensorPos of the velodyne poster */
+  memcpy(&t3d_sensor_to_main.euler.euler,
+   &(velodyne_ptr->position.sensorToMain.euler), sizeof(POM_EULER));
+  memcpy(&t3d_main_to_origin.euler.euler,
+   &(velodyne_ptr->position.mainToOrigin.euler), sizeof(POM_EULER));
+  /* Compose the T3Ds to obtain sensor to origin transformation */
+  t3dCompIn(&t3d_sensor_to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
+
+  /* TODO fill sensor_to_origin from covariance matrix in t3d */
   return sensor_to_origin;
 }
 
 atlaas::points cloud(/* velodyne3DImage* velodyne_ptr */) {
   atlaas::points point_cloud;
-  /* TODO
-  velodyne_ptr->points
-  see: velodyne-genom/velodyneClient.h
-  and  dtm-genom/codels/conversion.c */
+  int height = velodyne_ptr->height;
+  int width  = velodyne_ptr->width;
+
+  /* Copy valid points in the point_cloud
+    see: velodyne-genom/velodyneClient.h : velodyne3DImage
+    and  dtm-genom/codels/conversion.c : dtm_fillIm3dFromVyn3DImage */
+  for (int i = 0; i < height; i++)
+  for (int j = 0; j < width;  j++) {
+    const velodyne3DPoint &vp = velodyne_ptr->points[i * width + j];
+    if (vp.status == VELODYNE_GOOD_3DPOINT) {
+      atlaas::point_xyz_t point = {
+        vp.coordinates[0],
+        vp.coordinates[1],
+        vp.coordinates[2] };
+      point_cloud.push_back( point );
+    }
+  }
+
   return point_cloud;
 }
 
