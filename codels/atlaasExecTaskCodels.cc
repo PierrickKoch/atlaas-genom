@@ -110,13 +110,20 @@ void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
    &(velodyne_ptr->position.mainToOrigin.euler), sizeof(POM_EULER));
   /* Compose the T3Ds to obtain sensor to origin transformation */
   t3dCompIn(&t3d_sensor_to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
-
-  /* TODO fill to_origin from covariance matrix in t3d_sensor_to_origin */
+  /* Convert the covariance matrix in a 6D vector ( rx, ry, rz, x, y, z ) */
+  t3dConvertTo(T3D_VECTOR, &t3d_sensor_to_origin);
+  /* fill to_origin from t3d_sensor_to_origin vector */
+  to_origin[0] = t3d_sensor_to_origin.vector.x;
+  to_origin[1] = t3d_sensor_to_origin.vector.y;
+  to_origin[2] = t3d_sensor_to_origin.vector.z;
+  to_origin[3] = t3d_sensor_to_origin.vector.rx;
+  to_origin[4] = t3d_sensor_to_origin.vector.ry;
+  to_origin[5] = t3d_sensor_to_origin.vector.rz;
 }
 
 void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
-  size_t index = 0;
   cloud.clear(); /* Leaves the capacity() of the vector unchanged. */
+  auto it = cloud.begin();
 
   /* Copy valid points in the point_cloud
     see: velodyne-genom/velodyneClient.h : velodyne3DImage
@@ -125,10 +132,10 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
   for (int j = 0; j < velodyne_ptr->width;  j++) {
     const velodyne3DPoint &vp = velodyne_ptr->points[i * VELODYNE_3D_IMAGE_WIDTH + j];
     if (vp.status == VELODYNE_GOOD_3DPOINT) {
-      cloud[index][0] = vp.coordinates[0];
-      cloud[index][1] = vp.coordinates[1];
-      cloud[index][2] = vp.coordinates[2];
-      index++;
+      (*it)[0] = vp.coordinates[0];
+      (*it)[1] = vp.coordinates[1];
+      (*it)[2] = vp.coordinates[2];
+      ++it;
     }
   }
 }
