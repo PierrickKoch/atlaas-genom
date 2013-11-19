@@ -16,6 +16,8 @@
 #include <atlaas/atlaas.hpp>
 
 static atlaas::atlaas dtm;
+static atlaas::points cloud;
+static atlaas::point6d to_origin;
 
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
@@ -90,15 +92,16 @@ atlaas_init_exec(geodata *meta, int *report)
     return ETHER;
   }
 
+  cloud.reserve(VELODYNE_3D_IMAGE_HEIGHT * VELODYNE_3D_IMAGE_WIDTH);
+
   return ETHER;
 }
 
 
-atlaas::point6d to_origin(/* velodyne3DImage* velodyne_ptr */) {
+void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
   T3D t3d_sensor_to_origin;
   T3D t3d_sensor_to_main;
   T3D t3d_main_to_origin;
-  atlaas::point6d sensor_to_origin;
 
   t3dInit(&t3d_sensor_to_origin, T3D_BRYAN, T3D_ALLOW_CONVERSION);
   t3dInit(&t3d_sensor_to_main,   T3D_BRYAN, T3D_ALLOW_CONVERSION);
@@ -111,33 +114,31 @@ atlaas::point6d to_origin(/* velodyne3DImage* velodyne_ptr */) {
   /* Compose the T3Ds to obtain sensor to origin transformation */
   t3dCompIn(&t3d_sensor_to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
 
-  /* TODO fill sensor_to_origin from covariance matrix in t3d */
-  return sensor_to_origin;
+  /* TODO fill to_origin from covariance matrix in t3d_sensor_to_origin */
 }
 
-atlaas::points cloud(/* velodyne3DImage* velodyne_ptr */) {
-  atlaas::points point_cloud;
-  int height = velodyne_ptr->height;
-  int width  = velodyne_ptr->width;
+void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
+  size_t index = 0;
+  cloud.clear(); /* Leaves the capacity() of the vector unchanged. */
 
   /* Copy valid points in the point_cloud
     see: velodyne-genom/velodyneClient.h : velodyne3DImage
     and  dtm-genom/codels/conversion.c : dtm_fillIm3dFromVyn3DImage */
-  for (int i = 0; i < height; i++)
-  for (int j = 0; j < width;  j++) {
-    const velodyne3DPoint &vp = velodyne_ptr->points[i * width + j];
+  for (int i = 0; i < velodyne_ptr->height; i++)
+  for (int j = 0; j < velodyne_ptr->width;  j++) {
+    const velodyne3DPoint &vp = velodyne_ptr->points[i * VELODYNE_3D_IMAGE_WIDTH + j];
     if (vp.status == VELODYNE_GOOD_3DPOINT) {
-      atlaas::point_xyz_t point = {
-        vp.coordinates[0],
-        vp.coordinates[1],
-        vp.coordinates[2] };
-      point_cloud.push_back( point );
+      cloud[index][0] = vp.coordinates[0];
+      cloud[index][1] = vp.coordinates[1];
+      cloud[index][2] = vp.coordinates[2];
+      index++;
     }
   }
-
-  return point_cloud;
 }
 
+void update_poster() {
+  /* TODO from dtm to p3d_poster */
+}
 
 /*------------------------------------------------------------------------
  * Fuse
@@ -153,13 +154,17 @@ atlaas::points cloud(/* velodyne3DImage* velodyne_ptr */) {
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  /* Get the velodyne poster, fills the internal DATA_IM3D and TR3D with it  */
-  if (atlaasvelodyne3DImagePosterRead (velodyne_poster_id, velodyne_ptr) != OK) {
-    fprintf (stderr, "atlaas: can not read Velodyne poster\n");
-    *report = S_atlaas_POSTER_NOT_FOUND;
-    return ETHER;
-  }
-  dtm.merge(cloud(), to_origin());
+  posterTake(velodyne_poster_id, POSTER_READ);
+  update_to_origin();
+  update_cloud();
+  posterGive(velodyne_poster_id);
+
+  dtm.merge(cloud, to_origin);
+
+  /* TODO write a fill_poster for on-demand update */
+  posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);
+  update_poster();
+  posterGive(ATLAAS_P3DPOSTER_POSTER_ID);
 
   return ETHER;
 }

@@ -25,7 +25,7 @@ typedef struct atlaas_t {
     /** params */
     geodata meta;
     /** actual data */
-    raster band;
+    DTM_P3D_POSTER p3d_poster;
 } atlaas_t;
 
 /* Initializes the internal ATLAAS */
@@ -54,6 +54,15 @@ request Fuse {
         POSTER_NOT_FOUND;
     incompatible_with:  all;
 };
+
+
+
+poster P3dPoster {
+    update:     user;
+    type:       p3d_poster::DTM_P3D_POSTER;
+    exec_task:  ExecTask;
+};
+
 
 exec_task ExecTask {
     priority:       200;

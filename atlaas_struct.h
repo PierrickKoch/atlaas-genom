@@ -3,6 +3,11 @@
 
 #define POSTER_MAX_LEN 256
 
+/* DTM_MAX_{LINES,COLUMNS} must be even,
+   so that the structure is aligned with respect to double */
+#define DTM_MAX_LINES   200
+#define DTM_MAX_COLUMNS 200
+
 /** atlaas struct
  *
  * This file aims at defining a generic structur for GeoData.
@@ -10,12 +15,6 @@
  * For file I/O, please use the gdal wrapper available online
  * https://github.com/pierriko/gdalwrap
  */
-
-typedef struct raster {
-    unsigned long size;
-    float data[512*512*3];
-} raster;
-
 
 typedef struct geodata {
     /** width in pixel */
@@ -49,5 +48,35 @@ typedef struct geodata {
     /** Velodyne poster name */
     char velodyne_poster[POSTER_MAX_LEN];
 } geodata;
+
+
+typedef enum demCellState {DTM_CELL_EMPTY, DTM_CELL_FILLED} demCellState;
+
+typedef struct DTM_P3D_POSTER {
+    int nbLines;
+    int nbCols;
+
+    /** Coordinates of the topleft corner
+     * (0,0) pixel in the global frame
+     */
+    float xOrigin;
+    float yOrigin;
+
+    /** Size of a cell in meters */
+    float xScale;
+    float yScale;
+
+    /** Elevation of the '0' value */
+    float zOrigin;
+    /** Scale to store the elevation */
+    float zScale;
+
+    /** To know if a cell is EMPTY or FILLED */
+    demCellState state[DTM_MAX_LINES][DTM_MAX_COLUMNS];
+
+    /** Altitude in float */
+    float zfloat[DTM_MAX_LINES][DTM_MAX_COLUMNS];
+} DTM_P3D_POSTER;
+
 
 #endif /* ATLAASSTRUCT_H */
