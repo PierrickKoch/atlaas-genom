@@ -93,13 +93,32 @@ atlaas_init_exec(geodata *meta, int *report)
   return ETHER;
 }
 
+
+atlaas::point6d to_origin(/* velodyne3DImage* velodyne_ptr */) {
+  atlaas::point6d sensor_to_origin;
+  /* TODO
+  velodyne_ptr->position.sensorToMain.euler
+  velodyne_ptr->position.mainToOrigin.euler */
+  return sensor_to_origin;
+}
+
+atlaas::points cloud(/* velodyne3DImage* velodyne_ptr */) {
+  atlaas::points point_cloud;
+  /* TODO
+  velodyne_ptr->points
+  see: velodyne-genom/velodyneClient.h
+  and  dtm-genom/codels/conversion.c */
+  return point_cloud;
+}
+
+
 /*------------------------------------------------------------------------
  * Fuse
  *
  * Description: 
  *
  * Reports:      OK
- *              S_atlaas_NOT_CONNECTED
+ *              S_atlaas_POSTER_NOT_FOUND
  */
 
 /* atlaas_fuse_exec  -  codel EXEC of Fuse
@@ -110,18 +129,10 @@ atlaas_fuse_exec(int *report)
   /* Get the velodyne poster, fills the internal DATA_IM3D and TR3D with it  */
   if (atlaasvelodyne3DImagePosterRead (velodyne_poster_id, velodyne_ptr) != OK) {
     fprintf (stderr, "atlaas: can not read Velodyne poster\n");
-    *report = S_dtm_POSTER_NOT_FOUND;
+    *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
   }
-  /* TODO dtm.merge(cloud, to_origin)
-  velodyne_ptr->position.sensorToMain.euler
-  velodyne_ptr->position.mainToOrigin.euler
-  velodyne_ptr->points
-
-  see: velodyne-genom/velodyneClient.h
-  */
+  dtm.merge(cloud(), to_origin());
 
   return ETHER;
 }
-
-

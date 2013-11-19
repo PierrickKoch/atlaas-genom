@@ -24,7 +24,6 @@ import from velodyne {
 typedef struct atlaas_t {
     /** params */
     geodata meta;
-    connect conn;
     /** actual data */
     raster band;
 } atlaas_t;
@@ -51,7 +50,8 @@ request Fuse {
     posters_input:  velodyne3DImage;
     exec_task:      ExecTask;
     c_exec_func:    atlaas_fuse_exec;
-    fail_msg:       NOT_CONNECTED;
+    fail_msg:
+        POSTER_NOT_FOUND;
     incompatible_with:  all;
 };
 
