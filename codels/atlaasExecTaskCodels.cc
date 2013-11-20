@@ -9,6 +9,8 @@
  **/
 
 #include <iostream>
+#include <fstream>
+
 #include <portLib.h>
 
 #include "server/atlaasHeader.h"
@@ -29,6 +31,8 @@ static T3D main_to_origin;
 
 static DTM_P3D_POSTER* p3d_poster;
 
+static std::ofstream tmplog("/tmp/atlaas.log");
+
 /*------------------------------------------------------------------------
  *
  * atlaas_exec_task_init  --  Initialization codel (fIDS, ...)
@@ -41,10 +45,11 @@ static DTM_P3D_POSTER* p3d_poster;
 STATUS
 atlaas_exec_task_init(int *report)
 {
-  p3d_poster = posterAddr(ATLAAS_P3DPOSTER_POSTER_ID);
+  p3d_poster = (DTM_P3D_POSTER*) posterAddr(ATLAAS_P3DPOSTER_POSTER_ID);
   if (p3d_poster == NULL)
     return ERROR;
 
+  tmplog << __func__ << std::endl;
   return OK;
 }
 
@@ -61,6 +66,8 @@ STATUS
 atlaas_exec_task_end(void)
 {
   empty_data_im3d(&im3d);
+  tmplog << __func__ << std::endl;
+  tmplog.close();
   return OK;
 }
 
@@ -87,7 +94,7 @@ atlaas_init_exec(geodata *meta, int *report)
 
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
-    std::cerr << "atlaas: cannot find velodyne poster\n";
+    std::cerr << "atlaas: cannot find velodyne poster" << std::endl;
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
   }
@@ -102,12 +109,15 @@ atlaas_init_exec(geodata *meta, int *report)
   /* Initialize the DATA_IM3D */
   if (init_data_im3d(&im3d, velodyne_ptr->height,
                      velodyne_ptr->maxScanWidth, 0, 0, 0) != ERR_IM3D_OK) {
-    std::cerr << "atlaas: cannot initialize im3d\n";
+    std::cerr << "atlaas: cannot initialize im3d" << std::endl;
     *report = S_atlaas_IM3D_INIT;
     return ETHER;
   }
 
   cloud.reserve(velodyne_ptr->height * velodyne_ptr->maxScanWidth);
+
+  tmplog << __func__ << " cloud [" << velodyne_ptr->height << ", " <<
+         velodyne_ptr->maxScanWidth << "]" << std::endl;
 
   return ETHER;
 }
@@ -120,12 +130,12 @@ void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
   t3dInit(&sensor_to_main,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
   t3dInit(&main_to_origin,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
   /* Now get the relevant T3D from the PomSensorPos of the velodyne poster */
-  memcpy(&t3d_sensor_to_main.euler.euler,
+  memcpy(&sensor_to_main.euler.euler,
    &(velodyne_ptr->position.sensorToMain.euler), sizeof(POM_EULER));
-  memcpy(&t3d_main_to_origin.euler.euler,
+  memcpy(&main_to_origin.euler.euler,
    &(velodyne_ptr->position.mainToOrigin.euler), sizeof(POM_EULER));
   /* Compose the T3Ds to obtain sensor to origin transformation */
-  t3dCompIn(&to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
+  t3dCompIn(&sensor_to_origin, &sensor_to_main, &main_to_origin);
 }
 
 void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
@@ -164,7 +174,7 @@ void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
 
 void update_cloud() {
   DATA_PT3D* ip;
-  cloud.clear(); /* Leaves the capacity() of the vector unchanged. */
+  cloud.resize(velodyne_ptr->height * velodyne_ptr->width);
   auto it = cloud.begin();
 
   /* Copy valid points in the point_cloud */
@@ -178,6 +188,7 @@ void update_cloud() {
       ++it;
     }
   }
+  cloud.erase(it, cloud.end());
 }
 
 void update_poster() {
@@ -205,13 +216,13 @@ atlaas_fuse_exec(int *report)
   posterGive(velodyne_poster_id);
 
   /* from libimages3d/src/imutil.c */
-  if (change_repere_data_im3d (&im3d, &to_origin) != ERR_IM3D_OK) {
-    std::cerr << "atlaas: error in changing the 3D image frame\n";
+  if (change_repere_data_im3d (&im3d, &sensor_to_origin) != ERR_IM3D_OK) {
+    std::cerr << "atlaas: error in changing the 3D image frame" << std::endl;
     *report = S_atlaas_TRANSFORMATION_ERROR;
     return ETHER;
   }
   update_cloud();
-
+  tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
   dtm.merge(cloud);
 
   /* TODO write a fill_poster for on-demand update */
@@ -236,10 +247,11 @@ atlaas_fuse_exec(int *report)
 ACTIVITY_EVENT
 atlaas_save_exec(int *report)
 {
+  tmplog << __func__ << std::endl;
   try {
     dtm.get().save(ATLAAS_FILENAME);
   } catch ( std::exception& e ) {
-    std::cerr << "atlaas::save failed, with message '" << e.what() << "'\n";
+    std::cerr << "atlaas::save failed, with message '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
   }
   return ETHER;
