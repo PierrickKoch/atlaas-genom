@@ -20,11 +20,14 @@
 static atlaas::atlaas dtm;
 static atlaas::points cloud;
 
-static DATA_IM3D im3d;
-static T3D to_origin;
-
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
+
+static DATA_IM3D im3d;
+static T3D sensor_to_origin;
+static T3D main_to_origin;
+
+static DTM_P3D_POSTER* p3d_poster;
 
 /*------------------------------------------------------------------------
  *
@@ -38,7 +41,10 @@ static velodyne3DImage* velodyne_ptr;
 STATUS
 atlaas_exec_task_init(int *report)
 {
-  /* ... add your code here ... */
+  p3d_poster = posterAddr(ATLAAS_P3DPOSTER_POSTER_ID);
+  if (p3d_poster == NULL)
+    return ERROR;
+
   return OK;
 }
 
@@ -108,12 +114,11 @@ atlaas_init_exec(geodata *meta, int *report)
 
 
 void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
-  T3D t3d_sensor_to_main;
-  T3D t3d_main_to_origin;
+  T3D sensor_to_main;
 
-  t3dInit(&to_origin,           T3D_BRYAN, T3D_ALLOW_CONVERSION);
-  t3dInit(&t3d_sensor_to_main,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
-  t3dInit(&t3d_main_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&sensor_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&sensor_to_main,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&main_to_origin,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
   /* Now get the relevant T3D from the PomSensorPos of the velodyne poster */
   memcpy(&t3d_sensor_to_main.euler.euler,
    &(velodyne_ptr->position.sensorToMain.euler), sizeof(POM_EULER));
@@ -176,7 +181,8 @@ void update_cloud() {
 }
 
 void update_poster() {
-  /* TODO from dtm to p3d_poster */
+  /* TODO from dtm to p3d_poster
+     see: dtm-genom/codels/califeStructToPoster.c : dtm_to_p3d_poster */
 }
 
 /*------------------------------------------------------------------------
