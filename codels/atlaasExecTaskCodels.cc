@@ -14,11 +14,14 @@
 #include "server/atlaasHeader.h"
 
 #include <t3d/t3d.h>
+#include <libimages3d.h>
 #include <atlaas/atlaas.hpp>
 
 static atlaas::atlaas dtm;
 static atlaas::points cloud;
-static atlaas::point6d to_origin;
+
+static DATA_IM3D im3d;
+static T3D to_origin;
 
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
@@ -96,45 +99,68 @@ atlaas_init_exec(geodata *meta, int *report)
 
 
 void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
-  T3D t3d_sensor_to_origin;
   T3D t3d_sensor_to_main;
   T3D t3d_main_to_origin;
 
-  t3dInit(&t3d_sensor_to_origin, T3D_BRYAN, T3D_ALLOW_CONVERSION);
-  t3dInit(&t3d_sensor_to_main,   T3D_BRYAN, T3D_ALLOW_CONVERSION);
-  t3dInit(&t3d_main_to_origin,   T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&to_origin,           T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&t3d_sensor_to_main,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  t3dInit(&t3d_main_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
   /* Now get the relevant T3D from the PomSensorPos of the velodyne poster */
   memcpy(&t3d_sensor_to_main.euler.euler,
    &(velodyne_ptr->position.sensorToMain.euler), sizeof(POM_EULER));
   memcpy(&t3d_main_to_origin.euler.euler,
    &(velodyne_ptr->position.mainToOrigin.euler), sizeof(POM_EULER));
   /* Compose the T3Ds to obtain sensor to origin transformation */
-  t3dCompIn(&t3d_sensor_to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
-  /* Convert the covariance matrix in a 6D vector ( rx, ry, rz, x, y, z ) */
-  t3dConvertTo(T3D_VECTOR, &t3d_sensor_to_origin);
-  /* fill to_origin from t3d_sensor_to_origin vector */
-  to_origin[0] = t3d_sensor_to_origin.vector.x;
-  to_origin[1] = t3d_sensor_to_origin.vector.y;
-  to_origin[2] = t3d_sensor_to_origin.vector.z;
-  to_origin[3] = t3d_sensor_to_origin.vector.rx;
-  to_origin[4] = t3d_sensor_to_origin.vector.ry;
-  to_origin[5] = t3d_sensor_to_origin.vector.rz;
+  t3dCompIn(&to_origin, &t3d_sensor_to_main, &t3d_main_to_origin);
 }
 
-void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
+void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
+  /* shamelessly stolen from dtm-genom/codels/conversion.c */
+  int i, j;
+  DATA_PT3D* ip;
+  velodyne3DPoint* vp;
+
+  /* Copy the poster into the im3d up to the number of lines that actually
+     contains data */
+  for (i = 0; i < velodyne_ptr->height; i++)
+  for (j = 0; j < velodyne_ptr->width;  j++) {
+    ip = data_im3d_pt(&im3d, i, j);
+    vp = velodyne3DImageAt(velodyne_ptr, i, j);
+    if (vp->status == VELODYNE_GOOD_3DPOINT) {
+      ip->state = GOOD_PT3D;
+      ip->coord_1 = vp->coordinates[0];
+      ip->coord_2 = vp->coordinates[1];
+      ip->coord_3 = vp->coordinates[2];
+    } else {
+      ip->state = BAD_PT3D;
+    }
+  }
+  /* Flag the points not acquired as BAD_PT3D */
+  for (i = 0; i < velodyne_ptr->height; i++)
+  for (j = velodyne_ptr->width; j < velodyne_ptr->maxScanWidth; j++) {
+    ip = data_im3d_pt(&im3d, i, j);
+    ip->state = BAD_PT3D;
+  }
+
+  im3d.header.coordonnees = COORDONNEES_CARTESIENNES;
+  im3d.header.capteur = CAPTEUR_LASER1;
+  im3d.header.repere = REPERE_CAPTEUR;
+  im3d.header.points = POINTS_CALCULES;
+}
+
+void update_cloud() {
+  DATA_PT3D* ip;
   cloud.clear(); /* Leaves the capacity() of the vector unchanged. */
   auto it = cloud.begin();
 
-  /* Copy valid points in the point_cloud
-    see: velodyne-genom/velodyneClient.h : velodyne3DImage
-    and  dtm-genom/codels/conversion.c : dtm_fillIm3dFromVyn3DImage */
+  /* Copy valid points in the point_cloud */
   for (int i = 0; i < velodyne_ptr->height; i++)
   for (int j = 0; j < velodyne_ptr->width;  j++) {
-    const velodyne3DPoint &vp = velodyne_ptr->points[i * VELODYNE_3D_IMAGE_WIDTH + j];
-    if (vp.status == VELODYNE_GOOD_3DPOINT) {
-      (*it)[0] = vp.coordinates[0];
-      (*it)[1] = vp.coordinates[1];
-      (*it)[2] = vp.coordinates[2];
+    ip = data_im3d_pt(&im3d, i, j);
+    if (ip->state == GOOD_PT3D) {
+      (*it)[0] = ip->coord_1;
+      (*it)[1] = ip->coord_2;
+      (*it)[2] = ip->coord_3;
       ++it;
     }
   }
@@ -160,10 +186,18 @@ atlaas_fuse_exec(int *report)
 {
   posterTake(velodyne_poster_id, POSTER_READ);
   update_to_origin();
-  update_cloud();
+  update_im3d();
   posterGive(velodyne_poster_id);
 
-  dtm.merge(cloud, to_origin);
+  /* from libimages3d/src/imutil.c */
+  if (change_repere_data_im3d (&im3d, &to_origin) != ERR_IM3D_OK) {
+    fprintf(stderr, "atlaas: error in changing the 3D image frame");
+    *report = S_atlaas_TRANSFORMATION_ERROR;
+    return ETHER;
+  }
+  update_cloud();
+
+  dtm.merge(cloud);
 
   /* TODO write a fill_poster for on-demand update */
   posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);

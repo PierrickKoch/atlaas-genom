@@ -47,7 +47,8 @@ request Fuse {
     exec_task:      ExecTask;
     c_exec_func:    atlaas_fuse_exec;
     fail_msg:
-        POSTER_NOT_FOUND;
+        POSTER_NOT_FOUND,
+        TRANSFORMATION_ERROR;
     incompatible_with:  all;
 };
 
