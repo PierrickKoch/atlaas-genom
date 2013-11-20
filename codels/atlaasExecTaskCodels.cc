@@ -54,6 +54,7 @@ atlaas_exec_task_init(int *report)
 STATUS
 atlaas_exec_task_end(void)
 {
+  empty_data_im3d(&im3d);
   return OK;
 }
 
@@ -92,7 +93,15 @@ atlaas_init_exec(geodata *meta, int *report)
     return ETHER;
   }
 
-  cloud.reserve(VELODYNE_3D_IMAGE_HEIGHT * VELODYNE_3D_IMAGE_WIDTH);
+  /* Initialize the DATA_IM3D */
+  if (init_data_im3d(&im3d, velodyne_ptr->height,
+                     velodyne_ptr->maxScanWidth, 0, 0, 0) != ERR_IM3D_OK) {
+    std::cerr << "atlaas: cannot initialize im3d\n";
+    *report = S_atlaas_IM3D_INIT;
+    return ETHER;
+  }
+
+  cloud.reserve(velodyne_ptr->height * velodyne_ptr->maxScanWidth);
 
   return ETHER;
 }
@@ -191,7 +200,7 @@ atlaas_fuse_exec(int *report)
 
   /* from libimages3d/src/imutil.c */
   if (change_repere_data_im3d (&im3d, &to_origin) != ERR_IM3D_OK) {
-    fprintf(stderr, "atlaas: error in changing the 3D image frame");
+    std::cerr << "atlaas: error in changing the 3D image frame\n";
     *report = S_atlaas_TRANSFORMATION_ERROR;
     return ETHER;
   }

@@ -48,6 +48,7 @@ request Fuse {
     c_exec_func:    atlaas_fuse_exec;
     fail_msg:
         POSTER_NOT_FOUND,
+        IM3D_INIT,
         TRANSFORMATION_ERROR;
     incompatible_with:  all;
 };
