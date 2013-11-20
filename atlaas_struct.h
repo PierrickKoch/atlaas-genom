@@ -20,39 +20,40 @@
  */
 
 typedef struct geodata {
-    /** width in pixel */
-    unsigned long width;
+    /** width in meters */
+    double width;
 
-    /** height in pixel */
-    unsigned long height;
+    /** height in meters */
+    double height;
 
-    /** transform, from gdal.GeoTransform:
-     * [0] : top-left pixel position X (in UTM)
-     * [1] : w-e pixel resolution
-     * [2] : rotation, 0 if image is "north up"
-     * [3] : top-left pixel position Y (in UTM)
-     * [4] : rotation, 0 if image is "north up"
-     * [5] : n-s pixel resolution
-     */
-    double transform[6];
+    /** scale of a pixel in meters */
+    double scale;
 
-    /** custom origin
-     * [0] : custom X origin (in UTM)
-     * [1] : custom Y origin (in UTM)
-     */
-    double custom[2];
+    /** custom X origin in UTM in meters */
+    double custom_x;
 
-    /** utm
-     * [0] : zone
-     * [1] : is north ? (boolean)
-     */
-    int utm[2];
+    /** custom Y origin in UTM in meters */
+    double custom_y;
+
+    /** UTM (X) origin in meters, top-left pixel position X (in UTM) */
+    double utm_x;
+
+    /** UTM (Y) origin in meters, top-left pixel position Y (in UTM) */
+    double utm_y;
+
+    /** UTM zone */
+    int utm_zone;
+
+    /** is UTM north? (boolean) */
+    int utm_north;
 
     /** Velodyne poster name */
     char velodyne_poster[POSTER_MAX_LEN];
 } geodata;
 
-
+/** P3D_POSTER for local path planner
+ * from dtm-genom/dtmStruct.h
+ */
 typedef enum demCellState {DTM_CELL_EMPTY, DTM_CELL_FILLED} demCellState;
 
 typedef struct DTM_P3D_POSTER {

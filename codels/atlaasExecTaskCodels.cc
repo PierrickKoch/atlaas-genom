@@ -87,10 +87,10 @@ atlaas_init_exec(geodata *meta, int *report)
 {
   /* try..catch ? */
   dtm.init(meta->width, meta->height,
-           meta->transform[1], /* scale (W-E) */
-           meta->custom[0], meta->custom[1],
-           meta->transform[0], meta->transform[3],
-           meta->utm[0], meta->utm[1] );
+           meta->scale, /* scale (W-E) */
+           meta->custom_x, meta->custom_y,
+           meta->utm_x, meta->utm_y,
+           meta->utm_zone, meta->utm_north );
 
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
