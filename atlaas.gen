@@ -33,10 +33,22 @@ request Init {
     doc:            "Initialize and connect to Velodyne";
     type:           init;
     input:          meta::meta;
+    input_info:
+        ATLAAS_DEFAULT_WIDTH    ::"width in meters",
+        ATLAAS_DEFAULT_HEIGHT   ::"height in meters",
+        ATLAAS_DEFAULT_SCALE    ::"scale of a pixel in meters",
+        ATLAAS_DEFAULT_CUSTOM_X ::"custom X origin in UTM in meters",
+        ATLAAS_DEFAULT_CUSTOM_Y ::"custom Y origin in UTM in meters",
+        ATLAAS_DEFAULT_UTM_X    ::"top-left pixel position X (in UTM)",
+        ATLAAS_DEFAULT_UTM_Y    ::"top-left pixel position Y (in UTM)",
+        ATLAAS_DEFAULT_UTM_ZONE ::"UTM zone from 1 to 60",
+        ATLAAS_DEFAULT_UTM_NORTH::"is UTM north? (0/1)",
+        ATLAAS_DEFAULT_VELODYNE_POSTER::"Velodyne poster name";
     exec_task:      ExecTask;
     c_exec_func:    atlaas_init_exec;
     fail_msg:
-        POSTER_NOT_FOUND;
+        POSTER_NOT_FOUND,
+        IM3D_INIT;
     incompatible_with:  all;
 };
 
@@ -48,7 +60,6 @@ request Fuse {
     c_exec_func:    atlaas_fuse_exec;
     fail_msg:
         POSTER_NOT_FOUND,
-        IM3D_INIT,
         TRANSFORMATION_ERROR;
     incompatible_with:  all;
 };

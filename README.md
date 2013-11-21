@@ -5,7 +5,7 @@ atlaas-genom
 rm -f ~/openrobots/lib/pkgconfig/atlaas.pc
 genom -t atlaas
 ./configure TCL_CPPFLAGS=-I/usr/include/tcl8.5 --prefix=$HOME/openrobots
-make
+make install
 
 killmymodules
 pkill tclserv
@@ -17,11 +17,11 @@ package require genom
 connect
 lm atlaas
 
-atlaas::Init  50 50 0.1 0 0 -20 20 0 0 velodyneThreeDImage
+atlaas::Init  80 80 0.1 0 0 -40 40 31 1 velodyneThreeDImage
 atlaas::Fuse
 atlaas::Save
 
-while { 1 } { atlaas::Fuse; after 50; }
+while { 1 } { atlaas::Fuse; after 5; }
 
 eltclsh
 package require genom

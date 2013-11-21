@@ -3,8 +3,8 @@
  **
  ** Codels called by execution task atlaasExecTask
  **
- ** Author: 
- ** Date: 
+ ** Author: Pierrick Koch <pierrick.koch@laas.fr>
+ ** Date:   2013-11-20
  **
  **/
 
@@ -25,7 +25,12 @@ static atlaas::points cloud;
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
 
+static int velodyne_width;
+static int velodyne_height;
+
 static DATA_IM3D im3d;
+static int im3d_state;
+
 static T3D sensor_to_origin;
 static T3D main_to_origin;
 
@@ -65,7 +70,10 @@ atlaas_exec_task_init(int *report)
 STATUS
 atlaas_exec_task_end(void)
 {
-  empty_data_im3d(&im3d);
+  if (im3d_state != 0) {
+    empty_data_im3d(&im3d);
+    im3d_state = 0;
+  }
   tmplog << __func__ << std::endl;
   tmplog.close();
   return OK;
@@ -78,6 +86,7 @@ atlaas_exec_task_end(void)
  *
  * Reports:      OK
  *              S_atlaas_POSTER_NOT_FOUND
+ *              S_atlaas_IM3D_INIT
  */
 
 /* atlaas_init_exec  -  codel EXEC of Init
@@ -86,8 +95,7 @@ ACTIVITY_EVENT
 atlaas_init_exec(geodata *meta, int *report)
 {
   /* try..catch ? */
-  dtm.init(meta->width, meta->height,
-           meta->scale, /* scale (W-E) */
+  dtm.init(meta->width, meta->height, meta->scale,
            meta->custom_x, meta->custom_y,
            meta->utm_x, meta->utm_y,
            meta->utm_zone, meta->utm_north );
@@ -106,14 +114,20 @@ atlaas_init_exec(geodata *meta, int *report)
     return ETHER;
   }
 
-  /* Initialize the DATA_IM3D */
+  /* Initialize libimages3d : DATA_IM3D */
+  if (im3d_state != 0) {
+    empty_data_im3d(&im3d);
+    im3d_state = 0;
+  }
   if (init_data_im3d(&im3d, velodyne_ptr->height,
                      velodyne_ptr->maxScanWidth, 0, 0, 0) != ERR_IM3D_OK) {
     std::cerr << "atlaas: cannot initialize im3d" << std::endl;
     *report = S_atlaas_IM3D_INIT;
     return ETHER;
   }
+  im3d_state = 1;
 
+  /* Increase the capacity of the point cloud */
   cloud.reserve(velodyne_ptr->height * velodyne_ptr->maxScanWidth);
 
   tmplog << __func__ << " cloud [" << velodyne_ptr->height << ", " <<
@@ -122,8 +136,11 @@ atlaas_init_exec(geodata *meta, int *report)
   return ETHER;
 }
 
-
-void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
+/** Update transformations
+ *
+ * sensor -> origin = sensor -> main -> origin
+ */
+void update_transform(/* velodyne3DImage* velodyne_ptr */) {
   T3D sensor_to_main;
 
   t3dInit(&sensor_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
@@ -138,16 +155,22 @@ void update_to_origin(/* velodyne3DImage* velodyne_ptr */) {
   t3dCompIn(&sensor_to_origin, &sensor_to_main, &main_to_origin);
 }
 
+/** Update libimages3d structure to change cloud's frame
+ *
+ * shamelessly stolen from dtm-genom/codels/conversion.c
+ * TODO rewrite velodyne3DImage to be aligned (faster)
+ */
 void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
-  /* shamelessly stolen from dtm-genom/codels/conversion.c */
   int i, j;
   DATA_PT3D* ip;
   velodyne3DPoint* vp;
+  velodyne_width  = velodyne_ptr->width;
+  velodyne_height = velodyne_ptr->height;
 
   /* Copy the poster into the im3d up to the number of lines that actually
      contains data */
-  for (i = 0; i < velodyne_ptr->height; i++)
-  for (j = 0; j < velodyne_ptr->width;  j++) {
+  for (i = 0; i < velodyne_height; i++)
+  for (j = 0; j < velodyne_width;  j++) {
     ip = data_im3d_pt(&im3d, i, j);
     vp = velodyne3DImageAt(velodyne_ptr, i, j);
     if (vp->status == VELODYNE_GOOD_3DPOINT) {
@@ -160,8 +183,8 @@ void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
     }
   }
   /* Flag the points not acquired as BAD_PT3D */
-  for (i = 0; i < velodyne_ptr->height; i++)
-  for (j = velodyne_ptr->width; j < velodyne_ptr->maxScanWidth; j++) {
+  for (i = 0; i < velodyne_height; i++)
+  for (j = velodyne_width; j < velodyne_ptr->maxScanWidth; j++) {
     ip = data_im3d_pt(&im3d, i, j);
     ip->state = BAD_PT3D;
   }
@@ -172,14 +195,20 @@ void update_im3d(/* velodyne3DImage* velodyne_ptr */) {
   im3d.header.points = POINTS_CALCULES;
 }
 
+/** Update the point cloud
+ *
+ * Fill with all valid points from the libimages3d structure
+ * in the custom global frame
+ */
 void update_cloud() {
   DATA_PT3D* ip;
-  cloud.resize(velodyne_ptr->height * velodyne_ptr->width);
+  /* Resizes the cloud, make sure we will have enough space */
+  cloud.resize(velodyne_height * velodyne_width);
   auto it = cloud.begin();
 
   /* Copy valid points in the point_cloud */
-  for (int i = 0; i < velodyne_ptr->height; i++)
-  for (int j = 0; j < velodyne_ptr->width;  j++) {
+  for (int i = 0; i < velodyne_height; i++)
+  for (int j = 0; j < velodyne_width;  j++) {
     ip = data_im3d_pt(&im3d, i, j);
     if (ip->state == GOOD_PT3D) {
       (*it)[0] = ip->coord_1;
@@ -188,6 +217,7 @@ void update_cloud() {
       ++it;
     }
   }
+  /* Removes the elements in the range [it,end] */
   cloud.erase(it, cloud.end());
 }
 
@@ -203,6 +233,7 @@ void update_poster() {
  *
  * Reports:      OK
  *              S_atlaas_POSTER_NOT_FOUND
+ *              S_atlaas_TRANSFORMATION_ERROR
  */
 
 /* atlaas_fuse_exec  -  codel EXEC of Fuse
@@ -211,11 +242,11 @@ ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
   posterTake(velodyne_poster_id, POSTER_READ);
-  update_to_origin();
+  update_transform();
   update_im3d();
   posterGive(velodyne_poster_id);
 
-  /* from libimages3d/src/imutil.c */
+  /* Change the cloud's frame, from libimages3d/src/imutil.c */
   if (change_repere_data_im3d (&im3d, &sensor_to_origin) != ERR_IM3D_OK) {
     std::cerr << "atlaas: error in changing the 3D image frame" << std::endl;
     *report = S_atlaas_TRANSFORMATION_ERROR;

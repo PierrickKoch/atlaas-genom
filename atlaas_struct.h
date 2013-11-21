@@ -10,6 +10,17 @@
 
 #define ATLAAS_FILENAME "/tmp/atlaas.tif"
 
+/** Default init args */
+#define ATLAAS_DEFAULT_WIDTH     50.0
+#define ATLAAS_DEFAULT_HEIGHT    50.0
+#define ATLAAS_DEFAULT_SCALE     0.1
+#define ATLAAS_DEFAULT_CUSTOM_X  0.0
+#define ATLAAS_DEFAULT_CUSTOM_Y  0.0
+#define ATLAAS_DEFAULT_UTM_X     0.0
+#define ATLAAS_DEFAULT_UTM_Y     0.0
+#define ATLAAS_DEFAULT_UTM_ZONE  31
+#define ATLAAS_DEFAULT_UTM_NORTH 1
+#define ATLAAS_DEFAULT_VELODYNE_POSTER "velodyneThreeDImage"
 
 /** atlaas struct
  *
