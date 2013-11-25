@@ -249,30 +249,66 @@ void update_pos(const POM_POS& pos) {
  * see: dtm-genom/codels/califeStructToPoster.c : dtm_to_p3d_poster
  *
  * TODO use main_to_origin to define the window in the dtm that will be
- * copied in the p3d_poster
+ * copied in the p3d_poster DTM_MAX_{LINES,COLUMNS}
 */
 void update_p3d_poster() {
+  size_t delta, x_min, x_max, y_min, y_max;
   const atlaas::points_info_t& data = dtm.get_internal();
   const gdalwrap::gdal& map = dtm.get_unsynced_map();
-  const auto& origin = map.point_pix2custom(0, 0);
   /* Reset all fields of DTM_P3D_POSTER */
   memset((DTM_P3D_POSTER*) p3d_poster, 0, sizeof (DTM_P3D_POSTER));
 
-  /* header */
-  p3d_poster->nbLines = map.get_height();
-  p3d_poster->nbCols = map.get_width();
-  p3d_poster->zOrigin = 0; /* TODO */
-  p3d_poster->xScale = map.get_scale_x();
-  p3d_poster->yScale = map.get_scale_y();
-  p3d_poster->zScale = 1.0;
-  p3d_poster->xOrigin = origin[0];
-  p3d_poster->yOrigin = origin[1];
+  /* robot pose */
+  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(0, 0);
+  const gdalwrap::point_xy_t& ppx_robot = map.point_custom2pix(
+    main_to_origin.euler.x, main_to_origin.euler.y );
 
-  // TODO use map.index_custom()
-  size_t idx = 0;
-  for (int i = 0; i < map.get_height(); i++)
-  for (int j = 0; j < map.get_width();  j++) {
-    const auto& cell = data[idx++];
+  /* header */
+  p3d_poster->nbLines = DTM_MAX_LINES; // "x" TODO param
+  p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y" TODO param
+  p3d_poster->zOrigin = 0; /* TODO */
+  p3d_poster->xScale  = map.get_scale_x();
+  p3d_poster->yScale  = map.get_scale_y();
+  p3d_poster->zScale  = 1.0;
+
+  x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
+  x_max = ppx_robot[0] + p3d_poster->nbLines / 2;
+  if (x_min < 0) {
+    // shrink (!) TODO start new dtm if x_min > threshold ?
+    tmplog << __func__ << " shrink [-x] " << x_min << std::endl;
+    p3d_poster->xOrigin = custom_origin[0];
+    p3d_poster->nbLines += x_min;
+    x_min = 0;
+  } else {
+    p3d_poster->xOrigin = custom_origin[0] + delta * p3d_poster->xScale;
+    delta = map.get_height() - x_max;
+    if (delta > 0) {
+      tmplog << __func__ << " shrink [+x] " << delta << std::endl;
+      p3d_poster->nbLines -= delta;
+      x_max = map.get_height();
+    }
+  }
+
+  y_min = ppx_robot[1] - p3d_poster->nbCols / 2;
+  y_max = ppx_robot[1] + p3d_poster->nbCols / 2;
+  if (y_min < 0) {
+    tmplog << __func__ << " shrink [-y] " << y_min << std::endl;
+    p3d_poster->yOrigin = custom_origin[1];
+    p3d_poster->nbCols += y_min;
+    y_min = 0;
+  } else {
+    p3d_poster->xOrigin = custom_origin[1] + delta * p3d_poster->yScale;
+    delta = map.get_width() - y_max;
+    if (delta > 0) {
+      tmplog << __func__ << " shrink [+y] " << delta << std::endl;
+      p3d_poster->nbCols -= delta;
+      y_max = map.get_width();
+    }
+  }
+
+  for (int i = x_min; i < x_max; i++)
+  for (int j = y_min; j < y_max; j++) {
+    const auto& cell = data[ map.index_pix(i,j) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
       p3d_poster->state[i][j]  = DTM_CELL_EMPTY;
       p3d_poster->zfloat[i][j] = 0.0;
@@ -382,6 +418,7 @@ atlaas_export8u_exec(int *report)
 ACTIVITY_EVENT
 atlaas_fill_p3d(int *report)
 {
+  tmplog << __func__ << std::endl;
   POM_POS pos;
 
   /* read current robot position main_to_origin from POM */
