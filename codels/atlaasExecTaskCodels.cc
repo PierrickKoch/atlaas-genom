@@ -18,6 +18,10 @@
 #include <t3d/t3d.h>
 #include <libimages3d.h>
 #include <atlaas/atlaas.hpp>
+#include <gdalwrap/gdal.hpp>
+
+#define P3D_MIN_POINTS 10
+#define P3D_SIGMA_VERTICAL 50
 
 static atlaas::atlaas dtm;
 static atlaas::points cloud;
@@ -35,6 +39,9 @@ static T3D sensor_to_origin;
 static T3D main_to_origin;
 
 static DTM_P3D_POSTER* p3d_poster;
+
+static POSTER_ID pom_poster_id;
+
 
 static std::ofstream tmplog("/tmp/atlaas.log");
 
@@ -99,6 +106,13 @@ atlaas_init_exec(geodata *meta, int *report)
            meta->custom_x, meta->custom_y,
            meta->utm_x, meta->utm_y,
            meta->utm_zone, meta->utm_north );
+
+  /* Look up for POM Poster */
+  if (posterFind(meta->pom_poster, &pom_poster_id) == ERROR) {
+    std::cerr << "atlaas: cannot find pom poster" << std::endl;
+    *report = S_atlaas_POSTER_NOT_FOUND;
+    return ETHER;
+  }
 
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
@@ -221,9 +235,56 @@ void update_cloud() {
   cloud.erase(it, cloud.end());
 }
 
-void update_poster() {
-  /* TODO from dtm to p3d_poster
-     see: dtm-genom/codels/califeStructToPoster.c : dtm_to_p3d_poster */
+void update_pos(const POM_POS& pos) {
+  t3dInit(&main_to_origin, T3D_BRYAN, T3D_ALLOW_CONVERSION);
+  main_to_origin.euler.euler[0] = pos.mainToOrigin.euler.yaw;
+  main_to_origin.euler.euler[1] = pos.mainToOrigin.euler.pitch;
+  main_to_origin.euler.euler[2] = pos.mainToOrigin.euler.roll;
+  main_to_origin.euler.euler[3] = pos.mainToOrigin.euler.x;
+  main_to_origin.euler.euler[4] = pos.mainToOrigin.euler.y;
+  main_to_origin.euler.euler[5] = pos.mainToOrigin.euler.z;
+}
+
+/** Convert from dtm to p3d_poster
+ * see: dtm-genom/codels/califeStructToPoster.c : dtm_to_p3d_poster
+ *
+ * TODO use main_to_origin to define the window in the dtm that will be
+ * copied in the p3d_poster
+*/
+void update_p3d_poster() {
+  const atlaas::points_info_t& data = dtm.get_internal();
+  const gdalwrap::gdal& map = dtm.get_unsynced_map();
+  const auto& origin = map.point_pix2custom(0, 0);
+  /* Reset all fields of DTM_P3D_POSTER */
+  memset((DTM_P3D_POSTER*) p3d_poster, 0, sizeof (DTM_P3D_POSTER));
+
+  /* header */
+  p3d_poster->nbLines = map.get_height();
+  p3d_poster->nbCols = map.get_width();
+  p3d_poster->zOrigin = 0; /* TODO */
+  p3d_poster->xScale = map.get_scale_x();
+  p3d_poster->yScale = map.get_scale_y();
+  p3d_poster->zScale = 1.0;
+  p3d_poster->xOrigin = origin[0];
+  p3d_poster->yOrigin = origin[1];
+
+  // TODO use map.index_custom()
+  size_t idx = 0;
+  for (int i = 0; i < map.get_height(); i++)
+  for (int j = 0; j < map.get_width();  j++) {
+    const auto& cell = data[idx++];
+    if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
+      p3d_poster->state[i][j]  = DTM_CELL_EMPTY;
+      p3d_poster->zfloat[i][j] = 0.0;
+    } else {
+      if (cell[atlaas::SIGMA_Z] > P3D_SIGMA_VERTICAL) {
+        p3d_poster->zfloat[i][j] = cell[atlaas::Z_MAX];
+      } else {
+        p3d_poster->zfloat[i][j] = cell[atlaas::Z_MEAN];
+      }
+      p3d_poster->state[i][j] = DTM_CELL_FILLED;
+    }
+  }
 }
 
 /*------------------------------------------------------------------------
@@ -256,11 +317,6 @@ atlaas_fuse_exec(int *report)
   tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
   dtm.merge(cloud);
 
-  /* TODO write a fill_poster for on-demand update */
-  posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);
-  update_poster();
-  posterGive(ATLAAS_P3DPOSTER_POSTER_ID);
-
   return ETHER;
 }
 
@@ -285,6 +341,61 @@ atlaas_save_exec(int *report)
     std::cerr << "atlaas::save failed, with message '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
   }
+  return ETHER;
+}
+
+/*------------------------------------------------------------------------
+ * Export8u
+ *
+ * Description:
+ *
+ * Reports:      OK
+ *              S_atlaas_WRITE_ERROR
+ */
+
+/* atlaas_export8u_exec  -  codel EXEC of Export8u
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_export8u_exec(int *report)
+{
+  tmplog << __func__ << std::endl;
+  try {
+    dtm.export8u(ATLAAS_ZMEAN_FILENAME);
+  } catch ( std::exception& e ) {
+    std::cerr << "atlaas::export8u failed, with message '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_WRITE_ERROR;
+  }
+  return ETHER;
+}
+
+/*------------------------------------------------------------------------
+ * FillP3D
+ *
+ * Description:
+ *
+ * Reports:      OK
+ *              S_atlaas_POM_READ_ERROR
+ */
+
+/* atlaas_fill_p3d  -  codel EXEC of FillP3D
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_fill_p3d(int *report)
+{
+  POM_POS pos;
+
+  /* read current robot position main_to_origin from POM */
+  if (atlaasPOM_POSPosterRead(pom_poster_id, &(pos)) == ERROR) {
+    std::cerr << "atlaas: unable to read POM poster" << std::endl;
+    *report = S_atlaas_POM_READ_ERROR;
+    return ETHER;
+  }
+  update_pos(pos);
+
+  posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);
+  update_p3d_poster();
+  posterGive(ATLAAS_P3DPOSTER_POSTER_ID);
+
   return ETHER;
 }
 

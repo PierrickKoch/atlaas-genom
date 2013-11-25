@@ -9,6 +9,7 @@
 #define DTM_MAX_COLUMNS 200
 
 #define ATLAAS_FILENAME "/tmp/atlaas.tif"
+#define ATLAAS_ZMEAN_FILENAME "/tmp/atlaas.png"
 
 /** Default init args */
 #define ATLAAS_DEFAULT_WIDTH     50.0
@@ -21,6 +22,7 @@
 #define ATLAAS_DEFAULT_UTM_ZONE  31
 #define ATLAAS_DEFAULT_UTM_NORTH 1
 #define ATLAAS_DEFAULT_VELODYNE_POSTER "velodyneThreeDImage"
+#define ATLAAS_DEFAULT_POM_POSTER "pomPos"
 
 /** atlaas struct
  *
@@ -60,6 +62,9 @@ typedef struct geodata {
 
     /** Velodyne poster name */
     char velodyne_poster[POSTER_MAX_LEN];
+
+    /** POM poster name */
+    char pom_poster[POSTER_MAX_LEN];
 } geodata;
 
 /** P3D_POSTER for local path planner

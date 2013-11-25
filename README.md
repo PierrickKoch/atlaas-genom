@@ -17,11 +17,12 @@ package require genom
 connect
 lm atlaas
 
-atlaas::Init  80 80 0.1 0 0 -40 40 31 1 velodyneThreeDImage
+atlaas::Init  80 80 0.1 40 -40 0 0 31 1 velodyneThreeDImage pomPos
 atlaas::Fuse
 atlaas::Save
+atlaas::Export8u
 
-while { 1 } { atlaas::Fuse; after 5; }
+while { 1 } { atlaas::Fuse; atlaas::Export8u; after 5; }
 
 eltclsh
 package require genom

@@ -1,10 +1,14 @@
 module atlaas {
     codels_requires:    libimages3d, t3d, atlaas;
-    requires:           genBasic, genPos, "velodyne >= 1.2";
+    requires:           genBasic, genPos, pom, "velodyne >= 1.2";
     internal_data:      atlaas_t;   /* C typedef (defined below) */
     lang:               "c++";      /* atlaas is C++11 */
     number:             1337;       /* module id: unique number */
     version:            "0.1";
+};
+
+import from pom {
+#include "pomStruct.h"
 };
 
 import from genBasic {
@@ -43,7 +47,8 @@ request Init {
         ATLAAS_DEFAULT_UTM_Y    ::"top-left pixel position Y (in UTM)",
         ATLAAS_DEFAULT_UTM_ZONE ::"UTM zone from 1 to 60",
         ATLAAS_DEFAULT_UTM_NORTH::"is UTM north? (0/1)",
-        ATLAAS_DEFAULT_VELODYNE_POSTER::"Velodyne poster name";
+        ATLAAS_DEFAULT_VELODYNE_POSTER::"Velodyne poster name",
+        ATLAAS_DEFAULT_POM_POSTER::"POM poster name";
     exec_task:      ExecTask;
     c_exec_func:    atlaas_init_exec;
     fail_msg:
@@ -74,6 +79,26 @@ request Save {
     incompatible_with:  all;
 };
 
+request Export8u {
+    doc:            "Export Z_MEAN as grayscale (for display)";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_export8u_exec;
+    fail_msg:
+        WRITE_ERROR;
+    incompatible_with:  all;
+};
+
+request FillP3D {
+    doc:            "Fills a poster for P3D";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_fill_p3d;
+    posters_input:  POM_POS;
+    fail_msg:
+        POM_READ_ERROR;
+    incompatible_with:  all;
+};
 
 
 poster P3dPoster {
