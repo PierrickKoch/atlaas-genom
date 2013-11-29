@@ -338,6 +338,7 @@ void update_p3d_poster() {
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
+  POM_POS pos;
   posterTake(velodyne_poster_id, POSTER_READ);
   update_transform();
   update_im3d();
@@ -351,7 +352,15 @@ atlaas_fuse_exec(int *report)
   }
   update_cloud();
   tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
-  dtm.merge(cloud);
+
+  /* read current robot position main_to_origin from POM */
+  if (atlaasPOM_POSPosterRead(pom_poster_id, &(pos)) == ERROR) {
+    std::cerr << "atlaas: unable to read POM poster" << std::endl;
+    *report = S_atlaas_POM_READ_ERROR;
+    return ETHER;
+  }
+  update_pos(pos);
+  dtm.merge(cloud, main_to_origin.euler.x, main_to_origin.euler.y);
 
   return ETHER;
 }
