@@ -14,7 +14,7 @@ pkill tclserv
 h2 init 20123123
 
 # run atlaas
-tclserv -c
+tclserv # -c
 
 eltclsh
 package require genom
@@ -22,14 +22,18 @@ connect
 lm atlaas
 
 # atlaas::Init  80 80 0.1 40 -40 0 0 31 1 velodyneThreeDImage pomPos
-atlaas::Init 90 90 0.1 0 0 0 0 31 1 velodyneThreeDImage pomPos
+# atlaas::Init 90 90 0.1 0 0 0 0 31 1 velodyneThreeDImage pomPos
+
+atlaas::Init  90 90 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
+velodyne::OneShot  -180.0 180.0
 atlaas::Fuse
 atlaas::Save
 atlaas::Export8u
 
 while { 1 } {
     for { set i 0 } { $i < 10 } { incr i } {
-        atlaas::Fuse; after 300;
+        velodyne::OneShot  -180.0 180.0
+        atlaas::Fuse; after 500;
     }
     atlaas::Export8u;
 }

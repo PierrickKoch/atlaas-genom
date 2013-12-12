@@ -8,8 +8,8 @@
 #define DTM_MAX_LINES   200
 #define DTM_MAX_COLUMNS 200
 
-#define ATLAAS_FILENAME "/tmp/atlaas.tif"
-#define ATLAAS_ZMEAN_FILENAME "/tmp/atlaas.png"
+#define ATLAAS_FILENAME  "atlaas.tif"
+#define ATLAAS_HEIGHTMAP "atlaas.png"
 
 /** Default init args */
 #define ATLAAS_DEFAULT_WIDTH     50.0

@@ -43,7 +43,7 @@ static DTM_P3D_POSTER* p3d_poster;
 static POSTER_ID pom_poster_id;
 
 
-static std::ofstream tmplog("/tmp/atlaas.log");
+static std::ofstream tmplog("atlaas-genom.log");
 
 /*------------------------------------------------------------------------
  *
@@ -253,7 +253,9 @@ void update_pos(const POM_POS& pos) {
 */
 void update_p3d_poster() {
   size_t delta, x_min, x_max, y_min, y_max;
+  // we use internal data, faster to convert to P3D structure
   const atlaas::points_info_t& data = dtm.get_internal();
+  // we use the map only for meta-data, so no need to update it
   const gdalwrap::gdal& map = dtm.get_unsynced_map();
   /* Reset all fields of DTM_P3D_POSTER */
   memset((DTM_P3D_POSTER*) p3d_poster, 0, sizeof (DTM_P3D_POSTER));
@@ -405,7 +407,7 @@ atlaas_export8u_exec(int *report)
 {
   tmplog << __func__ << std::endl;
   try {
-    dtm.export8u(ATLAAS_ZMEAN_FILENAME);
+    dtm.export8u(ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
     std::cerr << "atlaas::export8u failed, with message '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
