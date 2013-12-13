@@ -1,5 +1,5 @@
 module atlaas {
-    codels_requires:    libimages3d, t3d, atlaas;
+    codels_requires:    t3d, atlaas;
     requires:           genBasic, genPos, pom, "velodyne >= 1.2";
     internal_data:      atlaas_t;   /* C typedef (defined below) */
     lang:               "c++";      /* atlaas is C++11 */
@@ -52,8 +52,7 @@ request Init {
     exec_task:      ExecTask;
     c_exec_func:    atlaas_init_exec;
     fail_msg:
-        POSTER_NOT_FOUND,
-        IM3D_INIT;
+        POSTER_NOT_FOUND;
     incompatible_with:  all;
 };
 
