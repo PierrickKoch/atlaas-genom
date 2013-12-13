@@ -334,6 +334,7 @@ atlaas_export8u_exec(int *report)
   try {
     dtm.export8u(ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
+    tmplog << __func__ << "[ERROR] '" << e.what() << "'" << std::endl;
     std::cerr << "atlaas::export8u failed, with message '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
   }
