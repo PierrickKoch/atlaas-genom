@@ -29,7 +29,7 @@ static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
 
 static T3D sensor_to_origin;
-static T3D main_to_origin;
+static double pom_x, pom_y;
 
 static DTM_P3D_POSTER* p3d_poster;
 
@@ -130,7 +130,7 @@ atlaas_init_exec(geodata *meta, int *report)
  * sensor -> origin = sensor -> main -> origin
  */
 void update_transform(/* velodyne3DImage* velodyne_ptr */) {
-  T3D sensor_to_main;
+  T3D sensor_to_main, main_to_origin;
 
   t3dInit(&sensor_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
   t3dInit(&sensor_to_main,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
@@ -174,19 +174,14 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
 }
 
 void update_pos(const POM_POS& pos) {
-  t3dInit(&main_to_origin, T3D_BRYAN, T3D_ALLOW_CONVERSION);
-  main_to_origin.euler.euler[0] = pos.mainToOrigin.euler.yaw;
-  main_to_origin.euler.euler[1] = pos.mainToOrigin.euler.pitch;
-  main_to_origin.euler.euler[2] = pos.mainToOrigin.euler.roll;
-  main_to_origin.euler.euler[3] = pos.mainToOrigin.euler.x;
-  main_to_origin.euler.euler[4] = pos.mainToOrigin.euler.y;
-  main_to_origin.euler.euler[5] = pos.mainToOrigin.euler.z;
+  pom_x = pos.mainToOrigin.euler.x;
+  pom_y = pos.mainToOrigin.euler.y;
 }
 
 /** Convert from dtm to p3d_poster
  * see: dtm-genom/codels/califeStructToPoster.c : dtm_to_p3d_poster
  *
- * TODO use main_to_origin to define the window in the dtm that will be
+ * use pom_{x,y} to define the window in the dtm that will be
  * copied in the p3d_poster DTM_MAX_{LINES,COLUMNS}
 */
 void update_p3d_poster() {
@@ -200,8 +195,7 @@ void update_p3d_poster() {
 
   /* robot pose */
   const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(0, 0);
-  const gdalwrap::point_xy_t& ppx_robot = map.point_custom2pix(
-    main_to_origin.euler.x, main_to_origin.euler.y );
+  const gdalwrap::point_xy_t& ppx_robot = map.point_custom2pix(pom_x, pom_y);
 
   /* header */
   p3d_poster->nbLines = DTM_MAX_LINES; // "x" TODO param
