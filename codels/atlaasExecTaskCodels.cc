@@ -302,7 +302,7 @@ atlaas_save_exec(int *report)
 {
   tmplog << __func__ << std::endl;
   try {
-    dtm.get().save(ATLAAS_FILENAME);
+    dtm.save_currents();
   } catch ( std::exception& e ) {
     std::cerr << "atlaas::save failed, with message '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
