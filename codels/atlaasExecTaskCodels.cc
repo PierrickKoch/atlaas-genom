@@ -187,7 +187,7 @@ void update_pos(const POM_POS& pos) {
 void update_p3d_poster() {
   size_t delta, x_min, x_max, y_min, y_max;
   // we use internal data, faster to convert to P3D structure
-  const atlaas::points_info_t& data = dtm.get_internal();
+  const atlaas::cells_info_t& data = dtm.get_internal();
   // we use the map only for meta-data, so no need to update it
   const gdalwrap::gdal& map = dtm.get_unsynced_map();
   /* Reset all fields of DTM_P3D_POSTER */
