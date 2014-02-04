@@ -247,7 +247,7 @@ void update_p3d_poster() {
       p3d_poster->state[i][j]  = DTM_CELL_EMPTY;
       p3d_poster->zfloat[i][j] = 0.0;
     } else {
-      if (cell[atlaas::SIGMA_Z] > P3D_SIGMA_VERTICAL) {
+      if (cell[atlaas::VARIANCE] > P3D_SIGMA_VERTICAL) {
         p3d_poster->zfloat[i][j] = cell[atlaas::Z_MAX];
       } else {
         p3d_poster->zfloat[i][j] = cell[atlaas::Z_MEAN];
