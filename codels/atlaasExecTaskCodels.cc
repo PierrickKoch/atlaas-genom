@@ -185,7 +185,7 @@ void update_pos(const POM_POS& pos) {
  * copied in the p3d_poster DTM_MAX_{LINES,COLUMNS}
 */
 void update_p3d_poster() {
-  size_t delta, x_min, x_max, y_min, y_max;
+  int delta, x_min, x_max, y_min, y_max;
   // we use internal data, faster to convert to P3D structure
   const atlaas::cells_info_t& data = dtm.get_internal();
   // we use the map only for meta-data, so no need to update it
@@ -194,12 +194,11 @@ void update_p3d_poster() {
   memset((DTM_P3D_POSTER*) p3d_poster, 0, sizeof (DTM_P3D_POSTER));
 
   /* robot pose */
-  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(0, 0);
   const gdalwrap::point_xy_t& ppx_robot = map.point_custom2pix(pom_x, pom_y);
 
   /* header */
-  p3d_poster->nbLines = DTM_MAX_LINES; // "x" TODO param
-  p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y" TODO param
+  p3d_poster->nbLines = DTM_MAX_LINES; // "x"
+  p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y"
   p3d_poster->zOrigin = 0; /* TODO */
   p3d_poster->xScale  = map.get_scale_x();
   p3d_poster->yScale  = map.get_scale_y();
@@ -208,17 +207,14 @@ void update_p3d_poster() {
   x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
   x_max = ppx_robot[0] + p3d_poster->nbLines / 2;
   if (x_min < 0) {
-    // shrink (!) TODO start new dtm if x_min > threshold ?
     tmplog << __func__ << " shrink [-x] " << x_min << std::endl;
-    p3d_poster->xOrigin = custom_origin[0];
     p3d_poster->nbLines += x_min;
     x_min = 0;
   } else {
-    p3d_poster->xOrigin = custom_origin[0] + delta * p3d_poster->xScale;
     delta = map.get_height() - x_max;
-    if (delta > 0) {
+    if (delta < 0) {
       tmplog << __func__ << " shrink [+x] " << delta << std::endl;
-      p3d_poster->nbLines -= delta;
+      p3d_poster->nbLines += delta;
       x_max = map.get_height();
     }
   }
@@ -227,32 +223,33 @@ void update_p3d_poster() {
   y_max = ppx_robot[1] + p3d_poster->nbCols / 2;
   if (y_min < 0) {
     tmplog << __func__ << " shrink [-y] " << y_min << std::endl;
-    p3d_poster->yOrigin = custom_origin[1];
     p3d_poster->nbCols += y_min;
     y_min = 0;
   } else {
-    p3d_poster->xOrigin = custom_origin[1] + delta * p3d_poster->yScale;
     delta = map.get_width() - y_max;
-    if (delta > 0) {
+    if (delta < 0) {
       tmplog << __func__ << " shrink [+y] " << delta << std::endl;
-      p3d_poster->nbCols -= delta;
+      p3d_poster->nbCols += delta;
       y_max = map.get_width();
     }
   }
+  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(x_min, y_min);
+  p3d_poster->xOrigin = custom_origin[0];
+  p3d_poster->yOrigin = custom_origin[1];
 
-  for (int i = x_min; i < x_max; i++)
-  for (int j = y_min; j < y_max; j++) {
-    const auto& cell = data[ map.index_pix(i,j) ];
+  for (int pi = 0, di = x_min; di < x_max; pi++, di++)
+  for (int pj = 0, dj = y_min; dj < y_max; pj++, dj++) {
+    const auto& cell = data[ map.index_pix(di, dj) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
-      p3d_poster->state[i][j]  = DTM_CELL_EMPTY;
-      p3d_poster->zfloat[i][j] = 0.0;
+      p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
+      p3d_poster->zfloat[pi][pj] = 0.0;
     } else {
       if (cell[atlaas::VARIANCE] > P3D_SIGMA_VERTICAL) {
-        p3d_poster->zfloat[i][j] = cell[atlaas::Z_MAX];
+        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MAX];
       } else {
-        p3d_poster->zfloat[i][j] = cell[atlaas::Z_MEAN];
+        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MEAN];
       }
-      p3d_poster->state[i][j] = DTM_CELL_FILLED;
+      p3d_poster->state[pi][pj] = DTM_CELL_FILLED;
     }
   }
 }

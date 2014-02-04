@@ -27,6 +27,7 @@ atlaas::Init  90 90 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneT
 atlaas::Fuse
 atlaas::Save
 atlaas::Export8u
+# atlaas::FillP3D
 
 while { 1 } {
     for { set i 0 } { $i < 10 } { incr i } {
