@@ -15,6 +15,7 @@ pkill tclserv
 h2 init 20123123
 
 # run atlaas
+# or valgrind --tool=callgrind atlaas
 tclserv # -c
 
 eltclsh
