@@ -173,9 +173,15 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
   cloud.erase(it, cloud.end());
 }
 
-void update_pos(const POM_POS& pos) {
+STATUS update_pos() {
+  POM_POS pos;
+  /* read current robot position main_to_origin from POM */
+  if (atlaasPOM_POSPosterRead(pom_poster_id, &(pos)) == ERROR)
+    return ERROR;
+
   pom_x = pos.mainToOrigin.euler.x;
   pom_y = pos.mainToOrigin.euler.y;
+  return OK;
 }
 
 /** Convert from dtm to p3d_poster
@@ -269,7 +275,6 @@ void update_p3d_poster() {
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  POM_POS pos;
   posterTake(velodyne_poster_id, POSTER_READ);
   update_transform();
   update_cloud();
@@ -347,16 +352,11 @@ ACTIVITY_EVENT
 atlaas_fill_p3d(int *report)
 {
   tmplog << __func__ << std::endl;
-  POM_POS pos;
-
-  /* read current robot position main_to_origin from POM */
-  if (atlaasPOM_POSPosterRead(pom_poster_id, &(pos)) == ERROR) {
+  if (update_pos() == ERROR) {
     std::cerr << "atlaas: unable to read POM poster" << std::endl;
     *report = S_atlaas_POM_READ_ERROR;
     return ETHER;
   }
-  update_pos(pos);
-
   posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);
   update_p3d_poster();
   posterGive(ATLAAS_P3DPOSTER_POSTER_ID);

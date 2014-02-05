@@ -22,7 +22,7 @@ package require genom
 connect
 lm atlaas
 
-atlaas::Init  90 90 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
+atlaas::Init  120 120 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
 # velodyne::OneShot  -180.0 180.0
 atlaas::Fuse
 atlaas::Save
@@ -35,6 +35,7 @@ while { 1 } {
         atlaas::Fuse; after 500;
     }
     atlaas::Export8u;
+    atlaas::FillP3D;
 }
 
 eltclsh
