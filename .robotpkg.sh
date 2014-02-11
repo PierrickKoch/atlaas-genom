@@ -2,7 +2,9 @@
 
 NEW_VER=0.1.3
 
-PKGNAME=atlaas-genom
+PROJECT=atlaas
+GENFILE=${PROJECT}.gen
+PKGNAME=${PROJECT}-genom
 PKGTYPE=wip
 RPKROOT=$HOME/robotpkg
 
@@ -11,7 +13,7 @@ RPKROOT=$HOME/robotpkg
 
 # do not edit following (supposed to be smart)
 
-OLD_VER=$(awk -F\" '/version/ { print $2 }' atlaas.gen)
+OLD_VER=$(awk -F\" '/version/ { print $2 }' $GENFILE)
 DIRNAME=$PKGNAME-$NEW_VER
 ARCHIVE=$DIRNAME.tar.gz
 
@@ -20,7 +22,7 @@ echo "Changes since v$OLD_VER:" > $SHORTLG
 echo "" >> $SHORTLG
 git shortlog v$OLD_VER..HEAD >> $SHORTLG
 
-sed -i.bak -e "s/set(PACKAGE_VERSION \"$OLD_VER\")/set(PACKAGE_VERSION \"$NEW_VER\")/" CMakeLists.txt
+sed -i.bak -e "s/version:\( *\)\"$OLD_VER\";/version:\1\"$NEW_VER\";/" $GENFILE
 
 git commit . -m"Bump to v$NEW_VER"
 git tag v$NEW_VER -F $SHORTLG
@@ -38,7 +40,12 @@ make MAKE_JOBS=$n update
 make print-PLIST
 # update PLIST only if changes
 test `diff -u0 PLIST PLIST.guess | wc -l` -gt 5 && mv PLIST.guess PLIST
-git commit . -m"[$PKGTYPE/$PKGNAME] Update to $DIRNAME"
+
+COMMITM=$(mktemp)
+echo "[$PKGTYPE/$PKGNAME] Update to $DIRNAME" > $COMMITM
+echo "" >> $COMMITM
+cat $SHORTLG >> $COMMITM
+git commit . -F $COMMITM
 
 scp $RPKROOT/distfiles/$ARCHIVE anna.laas.fr:/usr/local/openrobots/distfiles/$PKGNAME/
 
@@ -46,3 +53,4 @@ echo "You need to push in '$RPKROOT/$PKGTYPE/$PKGNAME' and '$OLDPWD'"
 echo "... After checking everything is fine :-)"
 
 rm $SHORTLG
+rm $COMMITM
