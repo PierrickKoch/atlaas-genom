@@ -23,7 +23,8 @@ package require genom
 connect
 lm atlaas
 
-atlaas::Init 96 96 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
+# TODO InitGlobalPosition / RetrieveRobotAngleAndPos
+atlaas::Init 120 120 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
 # velodyne::OneShot -180.0 180.0
 atlaas::Fuse
 atlaas::Save

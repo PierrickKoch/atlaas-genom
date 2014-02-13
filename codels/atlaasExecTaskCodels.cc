@@ -24,17 +24,15 @@
 
 static atlaas::atlaas dtm;
 static atlaas::points cloud;
+static atlaas::matrix transform;
 
+// for Fuse
 static POSTER_ID velodyne_poster_id;
 static velodyne3DImage* velodyne_ptr;
-
-static T3D sensor_to_origin;
+// for FillP3D
 static double pom_x, pom_y;
-
-static DTM_P3D_POSTER* p3d_poster;
-
 static POSTER_ID pom_poster_id;
-
+static DTM_P3D_POSTER* p3d_poster;
 
 static std::ofstream tmplog("atlaas-genom.log");
 
@@ -130,7 +128,7 @@ atlaas_init_exec(geodata *meta, int *report)
  * sensor -> origin = sensor -> main -> origin
  */
 void update_transform(/* velodyne3DImage* velodyne_ptr */) {
-  T3D sensor_to_main, main_to_origin;
+  T3D sensor_to_main, main_to_origin, sensor_to_origin;
 
   t3dInit(&sensor_to_origin,  T3D_BRYAN, T3D_ALLOW_CONVERSION);
   t3dInit(&sensor_to_main,    T3D_BRYAN, T3D_ALLOW_CONVERSION);
@@ -143,6 +141,9 @@ void update_transform(/* velodyne3DImage* velodyne_ptr */) {
   /* Compose the T3Ds to obtain sensor to origin transformation */
   t3dCompIn(&sensor_to_origin, &sensor_to_main, &main_to_origin);
   t3dConvertTo(T3D_MATRIX, &sensor_to_origin);
+  // use `reinterpret_cast` to pass c-array as an std::array
+  // `const` make sure array::operator=() copy the content.
+  transform = reinterpret_cast<const atlaas::matrix&>(sensor_to_origin.matrix.matrix);
 }
 
 /** Update the point cloud in sensor frame (need transform)
@@ -275,16 +276,21 @@ void update_p3d_poster() {
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  posterTake(velodyne_poster_id, POSTER_READ);
-  update_transform();
-  update_cloud();
-  posterGive(velodyne_poster_id);
+  tmplog << __func__ << std::endl;
+  try {
+    posterTake(velodyne_poster_id, POSTER_READ);
+    update_transform();
+    update_cloud();
+    posterGive(velodyne_poster_id);
 
-  tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
-
-  // use reinterpret_cast to pass c-array as an std::array (ugly hack)
-  dtm.merge(cloud, reinterpret_cast<atlaas::matrix&>(sensor_to_origin.matrix.matrix));
-
+    tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
+    dtm.merge(cloud, transform); // fuse/merge is done here
+    tmplog << __func__ << " merged " << std::endl;
+  } catch ( std::exception& e ) {
+    tmplog << __func__ << " error '" << e.what() << "'" << std::endl;
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_TRANSFORMATION_ERROR;
+  }
   return ETHER;
 }
 
