@@ -261,6 +261,18 @@ void update_p3d_poster() {
   }
 }
 
+// RAII patern
+class poster_locker {
+  const POSTER_ID& poster_id;
+public:
+  poster_locker(const POSTER_ID& id, POSTER_OP op) : poster_id(id) {
+    posterTake(poster_id, op);
+  }
+  ~poster_locker() {
+    posterGive(poster_id);
+  }
+};
+
 /*------------------------------------------------------------------------
  * Fuse
  *
@@ -278,11 +290,11 @@ atlaas_fuse_exec(int *report)
 {
   tmplog << __func__ << std::endl;
   try {
-    posterTake(velodyne_poster_id, POSTER_READ);
-    update_transform();
-    update_cloud();
-    posterGive(velodyne_poster_id);
-
+    {
+      poster_locker lock( velodyne_poster_id, POSTER_READ );
+      update_transform();
+      update_cloud();
+    }
     tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
     dtm.merge(cloud, transform); // fuse/merge is done here
     tmplog << __func__ << " merged " << std::endl;
@@ -363,9 +375,8 @@ atlaas_fill_p3d(int *report)
     *report = S_atlaas_POM_READ_ERROR;
     return ETHER;
   }
-  posterTake(ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE);
+  poster_locker lock( ATLAAS_P3DPOSTER_POSTER_ID, POSTER_WRITE );
   update_p3d_poster();
-  posterGive(ATLAAS_P3DPOSTER_POSTER_ID);
 
   return ETHER;
 }
