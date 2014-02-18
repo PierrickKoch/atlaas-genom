@@ -89,8 +89,7 @@ atlaas_init_exec(geodata *meta, int *report)
 {
   /* try..catch ? */
   dtm.init(meta->width, meta->height, meta->scale,
-           meta->custom_x, meta->custom_y,
-           meta->utm_x, meta->utm_y,
+           meta->custom_x, meta->custom_y, meta->custom_z,
            meta->utm_zone, meta->utm_north );
 
   /* Look up for POM Poster */

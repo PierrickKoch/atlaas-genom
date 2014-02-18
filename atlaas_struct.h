@@ -17,8 +17,7 @@
 #define ATLAAS_DEFAULT_SCALE     0.1
 #define ATLAAS_DEFAULT_CUSTOM_X  0.0
 #define ATLAAS_DEFAULT_CUSTOM_Y  0.0
-#define ATLAAS_DEFAULT_UTM_X     0.0
-#define ATLAAS_DEFAULT_UTM_Y     0.0
+#define ATLAAS_DEFAULT_CUSTOM_Z  0.0
 #define ATLAAS_DEFAULT_UTM_ZONE  31
 #define ATLAAS_DEFAULT_UTM_NORTH 1
 #define ATLAAS_DEFAULT_VELODYNE_POSTER "velodyneThreeDImage"
@@ -48,11 +47,8 @@ typedef struct geodata {
     /** custom Y origin in UTM in meters */
     double custom_y;
 
-    /** UTM (X) origin in meters, top-left pixel position X (in UTM) */
-    double utm_x;
-
-    /** UTM (Y) origin in meters, top-left pixel position Y (in UTM) */
-    double utm_y;
+    /** custom Z origin in UTM in meters */
+    double custom_z;
 
     /** UTM zone */
     int utm_zone;
