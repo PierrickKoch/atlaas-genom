@@ -34,8 +34,6 @@ static double pom_x, pom_y;
 static POSTER_ID pom_poster_id;
 static DTM_P3D_POSTER* p3d_poster;
 
-static std::ofstream tmplog("atlaas-genom.log");
-
 /*------------------------------------------------------------------------
  *
  * atlaas_exec_task_init  --  Initialization codel (fIDS, ...)
@@ -52,7 +50,7 @@ atlaas_exec_task_init(int *report)
   if (p3d_poster == NULL)
     return ERROR;
 
-  tmplog << __func__ << std::endl;
+  std::cout << __func__ << std::endl;
   return OK;
 }
 
@@ -68,8 +66,7 @@ atlaas_exec_task_init(int *report)
 STATUS
 atlaas_exec_task_end(void)
 {
-  tmplog << __func__ << std::endl;
-  tmplog.close();
+  std::cout << __func__ << std::endl;
   return OK;
 }
 
@@ -94,14 +91,14 @@ atlaas_init_exec(geodata *meta, int *report)
 
   /* Look up for POM Poster */
   if (posterFind(meta->pom_poster, &pom_poster_id) == ERROR) {
-    std::cerr << "atlaas: cannot find pom poster" << std::endl;
+    std::cerr << __func__ << " pom poster not found" << std::endl;
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
   }
 
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
-    std::cerr << "atlaas: cannot find velodyne poster" << std::endl;
+    std::cerr << __func__ << " velodyne poster not found" << std::endl;
     *report = S_atlaas_POSTER_NOT_FOUND;
     return ETHER;
   }
@@ -116,7 +113,7 @@ atlaas_init_exec(geodata *meta, int *report)
   /* Increase the capacity of the point cloud */
   cloud.reserve(velodyne_ptr->height * velodyne_ptr->maxScanWidth);
 
-  tmplog << __func__ << " cloud [" << velodyne_ptr->height << ", " <<
+  std::cout << __func__ << " reserve a cloud of [" << velodyne_ptr->height << ", " <<
          velodyne_ptr->maxScanWidth << "]" << std::endl;
 
   return ETHER;
@@ -176,7 +173,7 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
 STATUS update_pos() {
   POM_POS pos;
   /* read current robot position main_to_origin from POM */
-  if (atlaasPOM_POSPosterRead(pom_poster_id, &(pos)) == ERROR)
+  if (atlaasPOM_POSPosterRead(pom_poster_id, &pos) == ERROR)
     return ERROR;
 
   pom_x = pos.mainToOrigin.euler.x;
@@ -213,13 +210,13 @@ void update_p3d_poster() {
   x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
   x_max = ppx_robot[0] + p3d_poster->nbLines / 2;
   if (x_min < 0) {
-    tmplog << __func__ << " shrink [-x] " << x_min << std::endl;
+    std::cout << __func__ << " shrink [-x] " << x_min << std::endl;
     p3d_poster->nbLines += x_min;
     x_min = 0;
   } else {
     delta = map.get_height() - x_max;
     if (delta < 0) {
-      tmplog << __func__ << " shrink [+x] " << delta << std::endl;
+      std::cout << __func__ << " shrink [+x] " << delta << std::endl;
       p3d_poster->nbLines += delta;
       x_max = map.get_height();
     }
@@ -228,13 +225,13 @@ void update_p3d_poster() {
   y_min = ppx_robot[1] - p3d_poster->nbCols / 2;
   y_max = ppx_robot[1] + p3d_poster->nbCols / 2;
   if (y_min < 0) {
-    tmplog << __func__ << " shrink [-y] " << y_min << std::endl;
+    std::cout << __func__ << " shrink [-y] " << y_min << std::endl;
     p3d_poster->nbCols += y_min;
     y_min = 0;
   } else {
     delta = map.get_width() - y_max;
     if (delta < 0) {
-      tmplog << __func__ << " shrink [+y] " << delta << std::endl;
+      std::cout << __func__ << " shrink [+y] " << delta << std::endl;
       p3d_poster->nbCols += delta;
       y_max = map.get_width();
     }
@@ -287,18 +284,15 @@ public:
 ACTIVITY_EVENT
 atlaas_fuse_exec(int *report)
 {
-  tmplog << __func__ << std::endl;
   try {
     {
       poster_locker lock( velodyne_poster_id, POSTER_READ );
       update_transform();
       update_cloud();
     }
-    tmplog << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
+    std::cout << __func__ << " merge cloud of " << cloud.size() << " points" << std::endl;
     dtm.merge(cloud, transform); // fuse/merge is done here
-    tmplog << __func__ << " merged " << std::endl;
   } catch ( std::exception& e ) {
-    tmplog << __func__ << " error '" << e.what() << "'" << std::endl;
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_TRANSFORMATION_ERROR;
   }
@@ -319,11 +313,10 @@ atlaas_fuse_exec(int *report)
 ACTIVITY_EVENT
 atlaas_save_exec(int *report)
 {
-  tmplog << __func__ << std::endl;
   try {
     dtm.save_currents();
   } catch ( std::exception& e ) {
-    std::cerr << "atlaas::save failed, with message '" << e.what() << "'" << std::endl;
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
   }
   return ETHER;
@@ -343,12 +336,10 @@ atlaas_save_exec(int *report)
 ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
-  tmplog << __func__ << std::endl;
   try {
     dtm.export8u(ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
-    tmplog << __func__ << "[ERROR] '" << e.what() << "'" << std::endl;
-    std::cerr << "atlaas::export8u failed, with message '" << e.what() << "'" << std::endl;
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
   }
   return ETHER;
@@ -368,9 +359,8 @@ atlaas_export8u_exec(int *report)
 ACTIVITY_EVENT
 atlaas_fill_p3d(int *report)
 {
-  tmplog << __func__ << std::endl;
   if (update_pos() == ERROR) {
-    std::cerr << "atlaas: unable to read POM poster" << std::endl;
+    std::cerr << __func__ << " unable to read POM poster" << std::endl;
     *report = S_atlaas_POM_READ_ERROR;
     return ETHER;
   }
