@@ -12,7 +12,7 @@ make install
 
 killmymodules
 pkill tclserv
-h2 init 20123123
+h2 end; h2 init 20123123
 
 # run atlaas
 # or valgrind --tool=callgrind atlaas
@@ -24,8 +24,10 @@ connect
 lm atlaas
 
 # TODO InitGlobalPosition / RetrieveRobotAngleAndPos
-atlaas::Init 120 120 0.1 377084.01 4824464.47 377084.01 4824464.47 31 1 velodyneThreeDImage pomPos
+atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage pomPos
 # velodyne::OneShot -180.0 180.0
+# p3d::Init pomPos
+# p3d::SetP3dPoster atlaasP3dPoster
 atlaas::Fuse
 atlaas::Save
 atlaas::Export8u
