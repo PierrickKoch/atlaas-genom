@@ -204,7 +204,8 @@ void update_p3d_poster() {
   p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y"
   p3d_poster->zOrigin = 0; /* TODO */
   p3d_poster->xScale  = meta.get_scale_x();
-  p3d_poster->yScale  = meta.get_scale_y();
+  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+  p3d_poster->yScale  = - meta.get_scale_y();
   p3d_poster->zScale  = 1.0;
 
   x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
@@ -236,12 +237,14 @@ void update_p3d_poster() {
       y_max = meta.get_width();
     }
   }
-  const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_min);
+  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+  // hence p3d topleft origin = gdal bottomleft origin, x_min,y_max
+  const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_max);
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
-
+  // for the same reason, dj-- from y_max to y_min
   for (int pi = 0, di = x_min; di < x_max; pi++, di++)
-  for (int pj = 0, dj = y_min; dj < y_max; pj++, dj++) {
+  for (int pj = 0, dj = y_max; dj > y_min; pj++, dj--) {
     const auto& cell = data[ meta.index_pix(di, dj) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
       p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
@@ -337,7 +340,7 @@ ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
   try {
-    dtm.export8u(ATLAAS_HEIGHTMAP);
+    dtm.export8u(atlaas::getenv("ATLAAS_PATH", ".") + "/" + ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
