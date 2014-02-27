@@ -202,9 +202,10 @@ void update_p3d_poster() {
   /* header */
   p3d_poster->nbLines = DTM_MAX_LINES; // "x"
   p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y"
-  p3d_poster->zOrigin = 0; /* TODO */
-  p3d_poster->xScale  = map.get_scale_x();
-  p3d_poster->yScale  = map.get_scale_y();
+  p3d_poster->zOrigin = 0;
+  p3d_poster->xScale  = std::abs( map.get_scale_x() );
+  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+  p3d_poster->yScale  = std::abs( map.get_scale_y() );
   p3d_poster->zScale  = 1.0;
 
   x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
@@ -236,7 +237,14 @@ void update_p3d_poster() {
       y_max = map.get_width();
     }
   }
-  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(x_min, y_min);
+  // XXX DEBUG
+  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(x_min, y_max);
+  const gdalwrap::point_xy_t& custom_xy_min = map.point_pix2custom(x_min, y_min);
+  const gdalwrap::point_xy_t& custom_xy_max = map.point_pix2custom(x_max, y_max);
+  std::cout << __func__ << " origin x: " << custom_origin[0] << ", y: " << custom_origin[1] << std::endl;
+  std::cout << __func__ << " xy_min x: " << custom_xy_min[0] << ", y: " << custom_xy_min[1] << std::endl;
+  std::cout << __func__ << " xy_max x: " << custom_xy_max[0] << ", y: " << custom_xy_max[1] << std::endl;
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
 
