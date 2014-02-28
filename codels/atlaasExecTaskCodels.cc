@@ -248,19 +248,21 @@ void update_p3d_poster() {
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
 
+  // p3d uses "lines/columns" "convention"
+  // instead of the "width/height" classical image ordering
   for (int pi = 0, di = x_min; di < x_max; pi++, di++)
   for (int pj = 0, dj = y_min; dj < y_max; pj++, dj++) {
     const auto& cell = data[ map.index_pix(di, dj) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
-      p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
-      p3d_poster->zfloat[pi][pj] = 0.0;
+      p3d_poster->state[pj][pi]  = DTM_CELL_EMPTY;
+      p3d_poster->zfloat[pj][pi] = 0.0;
     } else {
       if (cell[atlaas::VARIANCE] > P3D_SIGMA_VERTICAL) {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MAX];
+        p3d_poster->zfloat[pj][pi] = cell[atlaas::Z_MAX];
       } else {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MEAN];
+        p3d_poster->zfloat[pj][pi] = cell[atlaas::Z_MEAN];
       }
-      p3d_poster->state[pi][pj] = DTM_CELL_FILLED;
+      p3d_poster->state[pj][pi] = DTM_CELL_FILLED;
     }
   }
 }
