@@ -192,19 +192,19 @@ void update_p3d_poster() {
   // we use internal data, faster to convert to P3D structure
   const atlaas::cells_info_t& data = dtm.get_internal();
   // we use the map only for meta-data, so no need to update it
-  const gdalwrap::gdal& map = dtm.get_unsynced_map();
+  const gdalwrap::gdal& meta = dtm.get_meta();
   /* Reset all fields of DTM_P3D_POSTER */
   memset((DTM_P3D_POSTER*) p3d_poster, 0, sizeof (DTM_P3D_POSTER));
 
   /* robot pose */
-  const gdalwrap::point_xy_t& ppx_robot = map.point_custom2pix(pom_x, pom_y);
+  const gdalwrap::point_xy_t& ppx_robot = meta.point_custom2pix(pom_x, pom_y);
 
   /* header */
   p3d_poster->nbLines = DTM_MAX_LINES; // "x"
   p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y"
   p3d_poster->zOrigin = 0; /* TODO */
-  p3d_poster->xScale  = map.get_scale_x();
-  p3d_poster->yScale  = map.get_scale_y();
+  p3d_poster->xScale  = meta.get_scale_x();
+  p3d_poster->yScale  = meta.get_scale_y();
   p3d_poster->zScale  = 1.0;
 
   x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
@@ -214,11 +214,11 @@ void update_p3d_poster() {
     p3d_poster->nbLines += x_min;
     x_min = 0;
   } else {
-    delta = map.get_height() - x_max;
+    delta = meta.get_height() - x_max;
     if (delta < 0) {
       std::cout << __func__ << " shrink [+x] " << delta << std::endl;
       p3d_poster->nbLines += delta;
-      x_max = map.get_height();
+      x_max = meta.get_height();
     }
   }
 
@@ -229,20 +229,20 @@ void update_p3d_poster() {
     p3d_poster->nbCols += y_min;
     y_min = 0;
   } else {
-    delta = map.get_width() - y_max;
+    delta = meta.get_width() - y_max;
     if (delta < 0) {
       std::cout << __func__ << " shrink [+y] " << delta << std::endl;
       p3d_poster->nbCols += delta;
-      y_max = map.get_width();
+      y_max = meta.get_width();
     }
   }
-  const gdalwrap::point_xy_t& custom_origin = map.point_pix2custom(x_min, y_min);
+  const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_min);
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
 
   for (int pi = 0, di = x_min; di < x_max; pi++, di++)
   for (int pj = 0, dj = y_min; dj < y_max; pj++, dj++) {
-    const auto& cell = data[ map.index_pix(di, dj) ];
+    const auto& cell = data[ meta.index_pix(di, dj) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
       p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
       p3d_poster->zfloat[pi][pj] = 0.0;
@@ -336,12 +336,7 @@ atlaas_save_exec(int *report)
 ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
-  try {
-    dtm.export8u(ATLAAS_HEIGHTMAP);
-  } catch ( std::exception& e ) {
-    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
-    *report = S_atlaas_WRITE_ERROR;
-  }
+  std::cerr << __func__ << " is no more supported, use save instead" << std::endl;
   return ETHER;
 }
 
