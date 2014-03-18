@@ -347,7 +347,7 @@ ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
   try {
-    dtm.export8u(ATLAAS_HEIGHTMAP);
+    dtm.export8u(atlaas::getenv("ATLAAS_PATH", ".") + "/" + ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
