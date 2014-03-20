@@ -34,8 +34,7 @@ atlaas::Export8u
 # atlaas::FillP3D
 
 while { 1 } {
-    atlaas::Fuse;
-    atlaas::Export8u; after 100;
+    atlaas::Fuse; after 200;
 }
 
 eltclsh
