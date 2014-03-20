@@ -138,8 +138,7 @@ void update_transform(/* velodyne3DImage* velodyne_ptr */) {
   t3dCompIn(&sensor_to_origin, &sensor_to_main, &main_to_origin);
   t3dConvertTo(T3D_MATRIX, &sensor_to_origin);
   // use `reinterpret_cast` to pass c-array as an std::array
-  // `const` make sure array::operator=() copy the content.
-  transform = reinterpret_cast<const atlaas::matrix&>(sensor_to_origin.matrix.matrix);
+  transform = reinterpret_cast<atlaas::matrix&>(sensor_to_origin.matrix.matrix);
 }
 
 /** Update the point cloud in sensor frame (need transform)
@@ -163,6 +162,7 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
       (*it)[0] = vp->coordinates[0];
       (*it)[1] = vp->coordinates[1];
       (*it)[2] = vp->coordinates[2];
+      (*it)[3] = vp->intensity;
       ++it;
     }
   }
