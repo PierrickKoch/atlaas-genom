@@ -186,7 +186,7 @@ STATUS update_pos() {
  *
  * use pom_{x,y} to define the window in the dtm that will be
  * copied in the p3d_poster DTM_MAX_{LINES,COLUMNS}
-*/
+ */
 void update_p3d_poster() {
   int delta, x_min, x_max, y_min, y_max;
   // we use internal data, faster to convert to P3D structure
@@ -200,62 +200,64 @@ void update_p3d_poster() {
   const gdalwrap::point_xy_t& ppx_robot = meta.point_custom2pix(pom_x, pom_y);
 
   /* header */
-  p3d_poster->nbLines = DTM_MAX_LINES; // "x"
-  p3d_poster->nbCols  = DTM_MAX_COLUMNS; // "y"
+  p3d_poster->nbLines = DTM_MAX_LINES; // height
+  p3d_poster->nbCols  = DTM_MAX_COLUMNS; // width
   p3d_poster->zOrigin = 0; /* TODO */
   p3d_poster->xScale  = meta.get_scale_x();
-  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+  // (!) y-scale is negative for UTM frame, which we do not consider in p3d
   p3d_poster->yScale  = - meta.get_scale_y();
   p3d_poster->zScale  = 1.0;
 
-  x_min = ppx_robot[0] - p3d_poster->nbLines / 2;
-  x_max = ppx_robot[0] + p3d_poster->nbLines / 2;
+  x_min = ppx_robot[0] - p3d_poster->nbCols / 2;
+  x_max = ppx_robot[0] + p3d_poster->nbCols / 2;
   if (x_min < 0) {
     std::cout << __func__ << " shrink [-x] " << x_min << std::endl;
-    p3d_poster->nbLines += x_min;
+    p3d_poster->nbCols += x_min;
     x_min = 0;
   } else {
-    delta = meta.get_height() - x_max;
+    delta = meta.get_width() - x_max;
     if (delta < 0) {
       std::cout << __func__ << " shrink [+x] " << delta << std::endl;
-      p3d_poster->nbLines += delta;
-      x_max = meta.get_height();
+      p3d_poster->nbCols += delta;
+      x_max = meta.get_width();
     }
   }
 
-  y_min = ppx_robot[1] - p3d_poster->nbCols / 2;
-  y_max = ppx_robot[1] + p3d_poster->nbCols / 2;
+  y_min = ppx_robot[1] - p3d_poster->nbLines / 2;
+  y_max = ppx_robot[1] + p3d_poster->nbLines / 2;
   if (y_min < 0) {
     std::cout << __func__ << " shrink [-y] " << y_min << std::endl;
-    p3d_poster->nbCols += y_min;
+    p3d_poster->nbLines += y_min;
     y_min = 0;
   } else {
-    delta = meta.get_width() - y_max;
+    delta = meta.get_height() - y_max;
     if (delta < 0) {
       std::cout << __func__ << " shrink [+y] " << delta << std::endl;
-      p3d_poster->nbCols += delta;
-      y_max = meta.get_width();
+      p3d_poster->nbLines += delta;
+      y_max = meta.get_height();
     }
   }
-  // (!) y-scale is negitve for UTM frame, which we do not consider in p3d
+
+  // (!) y-scale is negative for UTM frame, which we do not consider in p3d
   // hence p3d topleft origin = gdal bottomleft origin, x_min,y_max
+  // rot -90, atlaas is North-Up, p3d is West-Up (x->i, y->j)
   const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_max);
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
-  // for the same reason, dj-- from y_max to y_min
-  for (int pi = 0, di = x_min; di < x_max; pi++, di++)
-  for (int pj = 0, dj = y_max; dj > y_min; pj++, dj--) {
-    const auto& cell = data[ meta.index_pix(di, dj) ];
+  // for the same reason, cy-- from y_max to y_min
+  for (int ci = 0, cx = x_min; cx < x_max; ci++, cx++)
+  for (int cj = 0, cy = y_max; cy > y_min; cj++, cy--) {
+    const auto& cell = data[ meta.index_pix(cx, cy) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
-      p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
-      p3d_poster->zfloat[pi][pj] = 0.0;
+      p3d_poster->state[ci][cj]  = DTM_CELL_EMPTY;
+      p3d_poster->zfloat[ci][cj] = 0.0;
     } else {
       if (cell[atlaas::VARIANCE] > P3D_SIGMA_VERTICAL) {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MAX];
+        p3d_poster->zfloat[ci][cj] = cell[atlaas::Z_MAX];
       } else {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MEAN];
+        p3d_poster->zfloat[ci][cj] = cell[atlaas::Z_MEAN];
       }
-      p3d_poster->state[pi][pj] = DTM_CELL_FILLED;
+      p3d_poster->state[ci][cj] = DTM_CELL_FILLED;
     }
   }
 }
@@ -340,7 +342,7 @@ ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
   try {
-    dtm.export8u(atlaas::getenv("ATLAAS_PATH", ".") + "/" + ATLAAS_HEIGHTMAP);
+    dtm.export8u(atlaas::ATLAAS_PATH + "/" + ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
