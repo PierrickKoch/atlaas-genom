@@ -336,7 +336,12 @@ atlaas_save_exec(int *report)
 ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
-  std::cerr << __func__ << " is no more supported, use save instead" << std::endl;
+  try {
+    dtm.export8u(ATLAAS_HEIGHTMAP);
+  } catch ( std::exception& e ) {
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_WRITE_ERROR;
+  }
   return ETHER;
 }
 
