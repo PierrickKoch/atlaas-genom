@@ -27,10 +27,11 @@ lm atlaas
 # dala-scripts/shell-scripts/start.sh; sleep 2; killmodule rflex; killmodule velodyne
 atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage pomPos
 # velodyne::OneShot -180.0 180.0
-# p3d::Init pomPos
-# p3d::SetP3dPoster atlaasP3dPoster
-# p3d::SetDumpParams /tmp 0 P3D_DUMP_ON
-# Dala::p3dGoTo 10 10
+
+p3d::Init pomPos
+p3d::SetP3dPoster atlaasP3dPoster
+p3d::SetDumpParams /tmp 0 P3D_DUMP_ON
+Dala::p3dGoTo 20 20
 
 atlaas::Fuse
 atlaas::Save
