@@ -31,7 +31,7 @@ atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage pomPo
 p3d::Init pomPos
 p3d::SetP3dPoster atlaasP3dPoster
 p3d::SetDumpParams /tmp 0 P3D_DUMP_ON
-Dala::p3dGoTo 20 20
+Dala::p3dGoTo 5 2
 
 atlaas::Fuse
 atlaas::Save
