@@ -186,7 +186,7 @@ STATUS update_pos() {
  *
  * use pom_{x,y} to define the window in the dtm that will be
  * copied in the p3d_poster DTM_MAX_{LINES,COLUMNS}
-*/
+ */
 void update_p3d_poster() {
   int delta, x_min, x_max, y_min, y_max;
   // we use internal data, faster to convert to P3D structure
@@ -245,7 +245,7 @@ void update_p3d_poster() {
   // for the same reason, di-- from y_max to y_min
   for (int pi = 0, di = y_max; di > y_min; pi++, di--)
   for (int pj = 0, dj = x_min; dj < x_max; pj++, dj++) {
-    const auto& cell = data[ meta.index_pix(dj, di) ];
+    const auto& cell = data[ meta.index_pix(di, dj) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
       p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
       p3d_poster->zfloat[pi][pj] = 0.0;
