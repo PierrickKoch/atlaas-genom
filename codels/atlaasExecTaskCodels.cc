@@ -237,25 +237,27 @@ void update_p3d_poster() {
       y_max = meta.get_height();
     }
   }
+
   // (!) y-scale is negative for UTM frame, which we do not consider in p3d
   // hence p3d topleft origin = gdal bottomleft origin, x_min,y_max
+  // atlaas is North-Up, p3d is South-Up
   const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_max);
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
-  // for the same reason, di-- from y_max to y_min
-  for (int pi = 0, di = y_max; di > y_min; pi++, di--)
-  for (int pj = 0, dj = x_min; dj < x_max; pj++, dj++) {
-    const auto& cell = data[ meta.index_pix(di, dj) ];
+  // for the same reason, cy-- from y_max to y_min
+  for (int ci = 0, cy = y_max; cy > y_min; ci++, cy--)
+  for (int cj = 0, cx = x_min; cx < x_max; cj++, cx++) {
+    const auto& cell = data[ meta.index_pix(cx, cy) ];
     if (cell[atlaas::N_POINTS] < P3D_MIN_POINTS) {
-      p3d_poster->state[pi][pj]  = DTM_CELL_EMPTY;
-      p3d_poster->zfloat[pi][pj] = 0.0;
+      p3d_poster->state[ci][cj]  = DTM_CELL_EMPTY;
+      p3d_poster->zfloat[ci][cj] = 0.0;
     } else {
       if (cell[atlaas::VARIANCE] > P3D_SIGMA_VERTICAL) {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MAX];
+        p3d_poster->zfloat[ci][cj] = cell[atlaas::Z_MAX];
       } else {
-        p3d_poster->zfloat[pi][pj] = cell[atlaas::Z_MEAN];
+        p3d_poster->zfloat[ci][cj] = cell[atlaas::Z_MEAN];
       }
-      p3d_poster->state[pi][pj] = DTM_CELL_FILLED;
+      p3d_poster->state[ci][cj] = DTM_CELL_FILLED;
     }
   }
 }
