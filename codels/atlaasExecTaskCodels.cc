@@ -20,7 +20,7 @@
 #include <gdalwrap/gdal.hpp>
 
 #define P3D_MIN_POINTS 10
-#define P3D_SIGMA_VERTICAL 50
+#define P3D_SIGMA_VERTICAL 0.3
 
 static atlaas::atlaas dtm;
 static atlaas::points cloud;
@@ -240,7 +240,7 @@ void update_p3d_poster() {
 
   // (!) y-scale is negative for UTM frame, which we do not consider in p3d
   // hence p3d topleft origin = gdal bottomleft origin, x_min,y_max
-  // rot -90, atlaas is North-Up, p3d is West-Up (x->i, y->j)
+  // rot -90, atlaas is North-Up, p3d is West-Up (x->i, y->j) see ENU-NED
   const gdalwrap::point_xy_t& custom_origin = meta.point_pix2custom(x_min, y_max);
   p3d_poster->xOrigin = custom_origin[0];
   p3d_poster->yOrigin = custom_origin[1];
