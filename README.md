@@ -23,6 +23,17 @@ package require genom
 connect
 lm atlaas
 
+lm velodyne
+velodyne::Init VELODYNE_READ VELODYNE_HDL64 /tmp/0.pcap VELODYNE_TRUE VELODYNE_FALSE NULL
+velodyne::SetReadModeParams /tmp/velodyne/shot 0
+atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage NULL
+
+while { 1 } {
+    velodyne::OneShot -180.0 180.0
+    atlaas::Fuse
+}
+
+
 # TODO InitGlobalPosition / RetrieveRobotAngleAndPos
 # dala-scripts/shell-scripts/start.sh; sleep 2; killmodule rflex; killmodule velodyne
 atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage pomPos

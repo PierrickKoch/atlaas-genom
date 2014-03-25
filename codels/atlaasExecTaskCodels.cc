@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring> // std::strncmp
 
 #include <portLib.h>
 
@@ -89,13 +90,6 @@ atlaas_init_exec(geodata *meta, int *report)
            meta->custom_x, meta->custom_y, meta->custom_z,
            meta->utm_zone, meta->utm_north );
 
-  /* Look up for POM Poster */
-  if (posterFind(meta->pom_poster, &pom_poster_id) == ERROR) {
-    std::cerr << __func__ << " pom poster not found" << std::endl;
-    *report = S_atlaas_POSTER_NOT_FOUND;
-    return ETHER;
-  }
-
   /* Look up for Velodyne poster */
   if (posterFind(meta->velodyne_poster, &velodyne_poster_id) == ERROR) {
     std::cerr << __func__ << " velodyne poster not found" << std::endl;
@@ -115,6 +109,15 @@ atlaas_init_exec(geodata *meta, int *report)
 
   std::cout << __func__ << " reserve a cloud of [" << velodyne_ptr->height << ", " <<
          velodyne_ptr->maxScanWidth << "]" << std::endl;
+
+  /* Look up for POM Poster, except if meta->pom_poster is set to "NULL" */
+  pom_poster_id = NULL;
+  if ( std::strncmp(meta->pom_poster, "NULL", sizeof("NULL") - 1) &&
+      (posterFind(meta->pom_poster, &pom_poster_id) == ERROR) ) {
+    std::cerr << __func__ << " pom poster not found" << std::endl;
+    *report = S_atlaas_POSTER_NOT_FOUND;
+    return ETHER;
+  }
 
   return ETHER;
 }
@@ -173,7 +176,7 @@ void update_cloud(/* velodyne3DImage* velodyne_ptr */) {
 STATUS update_pos() {
   POM_POS pos;
   /* read current robot position main_to_origin from POM */
-  if (atlaasPOM_POSPosterRead(pom_poster_id, &pos) == ERROR)
+  if (!pom_poster_id || atlaasPOM_POSPosterRead(pom_poster_id, &pos) == ERROR)
     return ERROR;
 
   pom_x = pos.mainToOrigin.euler.x;
