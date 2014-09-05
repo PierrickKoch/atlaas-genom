@@ -87,6 +87,26 @@ request Export8u {
     incompatible_with:  all;
 };
 
+request ExportZMean {
+    doc:            "Export Z_MEAN (GeoTIFF for display)";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_export_zmean_exec;
+    fail_msg:
+        WRITE_ERROR;
+    incompatible_with:  all;
+};
+
+request WritePCD {
+    doc:            "Write PCD file (Pointcloud library)";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_write_pcd_exec;
+    fail_msg:
+        WRITE_ERROR;
+    incompatible_with:  all;
+};
+
 request FillP3D {
     doc:            "Fills a poster for P3D";
     type:           exec;

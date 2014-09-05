@@ -9,6 +9,7 @@
 #define DTM_MAX_COLUMNS 200
 
 #define ATLAAS_HEIGHTMAP "atlaas.jpg"
+#define ATLAAS_ZMEAN_GTIFF "atlaas.zmean.tif"
 
 /** Default init args */
 #define ATLAAS_DEFAULT_WIDTH     50.0

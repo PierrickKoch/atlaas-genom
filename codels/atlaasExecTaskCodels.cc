@@ -354,6 +354,58 @@ atlaas_export8u_exec(int *report)
 }
 
 /*------------------------------------------------------------------------
+ * ExportZMean
+ *
+ * Description: 
+ *
+ * Reports:      OK
+ *              S_atlaas_WRITE_ERROR
+ */
+
+/* atlaas_export_zmean_exec  -  codel EXEC of ExportZMean
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_export_zmean_exec(int *report)
+{
+  try {
+    dtm.export_zmean(atlaas::ATLAAS_PATH + "/" + ATLAAS_ZMEAN_GTIFF);
+  } catch ( std::exception& e ) {
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_WRITE_ERROR;
+  }
+  return ETHER;
+}
+
+/*------------------------------------------------------------------------
+ * WritePCD
+ *
+ * Description: 
+ *
+ * Reports:      OK
+ *              S_atlaas_WRITE_ERROR
+ */
+
+/* atlaas_write_pcd_exec  -  codel EXEC of WritePCD
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_write_pcd_exec(int *report)
+{
+  try {
+    {
+      poster_locker lock( velodyne_poster_id, POSTER_READ );
+      update_transform();
+      update_cloud();
+    }
+    std::cout << __func__ << " write cloud of " << cloud.size() << " points" << std::endl;
+    dtm.save_inc(cloud, transform);
+  } catch ( std::exception& e ) {
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_WRITE_ERROR;
+  }
+  return ETHER;
+}
+
+/*------------------------------------------------------------------------
  * FillP3D
  *
  * Description:
