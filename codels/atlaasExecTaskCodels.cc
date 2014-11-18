@@ -39,8 +39,8 @@ static DTM_P3D_POSTER* p3d_poster;
  *
  * atlaas_exec_task_init  --  Initialization codel (fIDS, ...)
  *
- * Description: 
- * 
+ * Description:
+ *
  * Returns:    OK or ERROR
  */
 
@@ -59,8 +59,8 @@ atlaas_exec_task_init(int *report)
  *
  * atlaas_exec_task_end  --  Termination codel
  *
- * Description: 
- * 
+ * Description:
+ *
  * Returns:    OK or ERROR
  */
 
@@ -74,7 +74,7 @@ atlaas_exec_task_end(void)
 /*------------------------------------------------------------------------
  * Init
  *
- * Description: 
+ * Description:
  *
  * Reports:      OK
  *              S_atlaas_POSTER_NOT_FOUND
@@ -280,7 +280,7 @@ public:
 /*------------------------------------------------------------------------
  * Fuse
  *
- * Description: 
+ * Description:
  *
  * Reports:      OK
  *              S_atlaas_POSTER_NOT_FOUND
@@ -345,7 +345,7 @@ ACTIVITY_EVENT
 atlaas_export8u_exec(int *report)
 {
   try {
-    dtm.export8u(atlaas::ATLAAS_PATH + "/" + ATLAAS_HEIGHTMAP);
+    dtm.export8u(dtm.get_atlaas_path() + "/" + ATLAAS_HEIGHTMAP);
   } catch ( std::exception& e ) {
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
@@ -356,7 +356,7 @@ atlaas_export8u_exec(int *report)
 /*------------------------------------------------------------------------
  * ExportZMean
  *
- * Description: 
+ * Description:
  *
  * Reports:      OK
  *              S_atlaas_WRITE_ERROR
@@ -368,7 +368,7 @@ ACTIVITY_EVENT
 atlaas_export_zmean_exec(int *report)
 {
   try {
-    dtm.export_zmean(atlaas::ATLAAS_PATH + "/" + ATLAAS_ZMEAN_GTIFF);
+    dtm.export_zmean(dtm.get_atlaas_path() + "/" + ATLAAS_ZMEAN_GTIFF);
   } catch ( std::exception& e ) {
     std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
     *report = S_atlaas_WRITE_ERROR;
@@ -379,7 +379,7 @@ atlaas_export_zmean_exec(int *report)
 /*------------------------------------------------------------------------
  * WritePCD
  *
- * Description: 
+ * Description:
  *
  * Reports:      OK
  *              S_atlaas_WRITE_ERROR
@@ -429,4 +429,3 @@ atlaas_fill_p3d(int *report)
 
   return ETHER;
 }
-
