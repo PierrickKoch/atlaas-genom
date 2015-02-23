@@ -10,6 +10,7 @@
 
 #define ATLAAS_HEIGHTMAP "atlaas.jpg"
 #define ATLAAS_ZMEAN_GTIFF "atlaas.zmean.tif"
+#define ATLAAS_REGION_PNG "region.png"
 
 /** Default init args */
 #define ATLAAS_DEFAULT_WIDTH     50.0

@@ -107,6 +107,16 @@ request WritePCD {
     incompatible_with:  all;
 };
 
+request MakeRegion {
+    doc:            "Write a region map as a PNG file";
+    type:           exec;
+    exec_task:      ExecTask;
+    c_exec_func:    atlaas_make_region_exec;
+    fail_msg:
+        WRITE_ERROR;
+    incompatible_with:  all;
+};
+
 request FillP3D {
     doc:            "Fills a poster for P3D";
     type:           exec;

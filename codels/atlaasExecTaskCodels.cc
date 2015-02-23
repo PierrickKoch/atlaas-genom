@@ -406,6 +406,29 @@ atlaas_write_pcd_exec(int *report)
 }
 
 /*------------------------------------------------------------------------
+ * MakeRegion
+ *
+ * Description:
+ *
+ * Reports:      OK
+ *              S_atlaas_WRITE_ERROR
+ */
+
+/* atlaas_make_region_exec  -  codel EXEC of MakeRegion
+   Returns:  EXEC END ETHER FAIL ZOMBIE */
+ACTIVITY_EVENT
+atlaas_make_region_exec(int *report)
+{
+  try {
+    dtm.region(ATLAAS_REGION_PNG);
+  } catch ( std::exception& e ) {
+    std::cerr << __func__ << " error '" << e.what() << "'" << std::endl;
+    *report = S_atlaas_WRITE_ERROR;
+  }
+  return ETHER;
+}
+
+/*------------------------------------------------------------------------
  * FillP3D
  *
  * Description:
