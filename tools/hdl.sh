@@ -30,7 +30,12 @@ velodyne::Init VELODYNE_READ VELODYNE_HDL${velodyne} NULL VELODYNE_TRUE VELODYNE
 velodyne::SetReadModeParams /tmp/velodyne/shot 0
 
 # size_x size_y px_res utm_x utm_y utm_z utm_zone utm_north velodyne_poster pom_poster
-atlaas::Init 120 120 0.1 398369.61 4903128.61 0.0 31 1 velodyneThreeDImage NULL
+# Caylus
+atlaas::Init 120 120 0.1 398369.61 4903128.61 357.0 31 1 velodyneThreeDImage NULL
+# LAAS parking
+#atlaas::Init 120 120 0.1 377016.5 4824342.9 141.0 31 1 velodyneThreeDImage NULL
+# Esperce
+#atlaas::Init 120 120 0.1 370523.52 4797144.85 0.0 31 1 velodyneThreeDImage NULL
 
 while { ! [catch {velodyne::OneShot -180 180}] } {
     atlaas::Fuse
