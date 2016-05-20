@@ -4,7 +4,7 @@ module atlaas {
     internal_data:      atlaas_t;   /* C typedef (defined below) */
     lang:               "c++";      /* atlaas is C++11 */
     number:             1337;       /* module id: unique number */
-    version:            "0.1.5";
+    version:            "0.1.6";
 };
 
 import from pom {
